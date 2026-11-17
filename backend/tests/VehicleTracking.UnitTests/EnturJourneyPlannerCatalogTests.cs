@@ -127,6 +127,49 @@ public class EnturJourneyPlannerCatalogTests
     }
 
     [Fact]
+    public async Task Passing_times_are_parsed_into_aimed_times_per_stop()
+    {
+        var (catalog, _) = CatalogAnswering("""
+            {"data":{"serviceJourney":{
+                "id":"t","line":null,"pointsOnLink":null,
+                "quays":[
+                    {"id":"NSR:Quay:1","name":"First","latitude":63.4,"longitude":10.4},
+                    {"id":"NSR:Quay:2","name":"Second","latitude":63.5,"longitude":10.5}
+                ],
+                "passingTimes":[
+                    {"quay":{"id":"NSR:Quay:1"},"arrival":{"time":null},"departure":{"time":"23:50:00"}},
+                    {"quay":{"id":"NSR:Quay:2"},"arrival":{"time":"00:10:30"},"departure":{"time":"00:11:00"}}
+                ]
+            }}}
+            """);
+
+        var route = await catalog.GetTripRouteAsync("t", CancellationToken.None);
+
+        Assert.NotNull(route?.StopTimes);
+        Assert.Null(route.StopTimes[0].AimedArrival);
+        Assert.Equal(new TimeOnly(23, 50), route.StopTimes[0].AimedDeparture);
+        Assert.Equal("NSR:Quay:2", route.StopTimes[1].StopId);
+        Assert.Equal(new TimeOnly(0, 10, 30), route.StopTimes[1].AimedArrival);
+    }
+
+    [Fact]
+    public async Task Passing_times_that_do_not_line_up_with_the_stops_are_left_out()
+    {
+        var (catalog, _) = CatalogAnswering("""
+            {"data":{"serviceJourney":{
+                "id":"t","line":null,"pointsOnLink":null,
+                "quays":[{"id":"NSR:Quay:1","name":"First","latitude":63.4,"longitude":10.4}],
+                "passingTimes":[{"quay":{"id":"NSR:Quay:9"},"arrival":{"time":"10:00:00"},"departure":{"time":"10:00:00"}}]
+            }}}
+            """);
+
+        var route = await catalog.GetTripRouteAsync("t", CancellationToken.None);
+
+        Assert.NotNull(route);
+        Assert.Null(route.StopTimes);
+    }
+
+    [Fact]
     public async Task An_unknown_trip_gives_null()
     {
         var (catalog, _) = CatalogAnswering("""{"data":{"serviceJourney":null}}""");

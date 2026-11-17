@@ -20,6 +20,7 @@ internal sealed class EnturJourneyPlannerCatalog(HttpClient http, IOptions<Journ
             line { id publicCode name transportMode }
             pointsOnLink { length points }
             quays { id name latitude longitude }
+            passingTimes { quay { id } arrival { time } departure { time } }
         } }
         """;
 
@@ -62,6 +63,8 @@ internal sealed class EnturJourneyPlannerCatalog(HttpClient http, IOptions<Journ
         var line = journey.GetProperty("line") is { ValueKind: JsonValueKind.Object } lineJson ? ReadLine(lineJson) : null;
         var stops = journey.GetProperty("quays").EnumerateArray().Select(ReadStop).ToList();
 
+        var stopTimes = ReadStopTimes(journey, stops);
+
         var path = journey.GetProperty("pointsOnLink") is { ValueKind: JsonValueKind.Object } link
             && link.GetProperty("points").GetString() is { Length: > 0 } encoded
                 ? PolylineDecoder.Decode(encoded)
@@ -71,10 +74,40 @@ internal sealed class EnturJourneyPlannerCatalog(HttpClient http, IOptions<Journ
         // 9 stops over 82 km). It draws straight lines between stations, not the track, so it is
         // flagged like a missing path: clients must not present it, or snap positions to it, as the real route.
         var onlyStops = path.Count > 0 && path.Count <= stops.Count;
-        if (path.Count > 0) return new TripRoute(tripId, line, path, stops, PathIsApproximate: onlyStops);
+        if (path.Count > 0) return new TripRoute(tripId, line, path, stops, PathIsApproximate: onlyStops, stopTimes);
         var stopPath = stops.Select(stop => new GeoPoint(stop.Latitude, stop.Longitude)).ToList();
-        return new TripRoute(tripId, line, stopPath, stops, PathIsApproximate: true);
+        return new TripRoute(tripId, line, stopPath, stops, PathIsApproximate: true, stopTimes);
     }
+
+    /// <summary>
+    /// Timetable per stop. passingTimes comes in the same order as quays, as local "HH:mm:ss"; the
+    /// quay ids are compared anyway, and if the two lists do not line up no times are offered at all.
+    /// </summary>
+    private static IReadOnlyList<PlannedStopTime>? ReadStopTimes(JsonElement journey, List<TransitStop> stops)
+    {
+        if (!journey.TryGetProperty("passingTimes", out var passing) || passing.ValueKind != JsonValueKind.Array) return null;
+        var items = passing.EnumerateArray().ToList();
+        if (items.Count != stops.Count) return null;
+
+        var times = new List<PlannedStopTime>(items.Count);
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var id = item.TryGetProperty("quay", out var quay) && quay.ValueKind == JsonValueKind.Object
+                ? ReadOptionalString(quay, "id")
+                : null;
+            if (id != stops[i].Id) return null;
+            times.Add(new PlannedStopTime(id, ReadTime(item, "arrival"), ReadTime(item, "departure")));
+        }
+        return times;
+    }
+
+    private static TimeOnly? ReadTime(JsonElement json, string name) =>
+        json.TryGetProperty(name, out var part) && part.ValueKind == JsonValueKind.Object
+            && ReadOptionalString(part, "time") is { } text
+            && TimeOnly.TryParseExact(text, "HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time)
+                ? time
+                : null;
 
     private static TransitLine ReadLine(JsonElement json) => new(
         json.GetProperty("id").GetString()!,

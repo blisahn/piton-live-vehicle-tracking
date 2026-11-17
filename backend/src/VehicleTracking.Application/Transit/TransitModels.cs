@@ -13,6 +13,7 @@ public sealed record GeoPoint(double Latitude, double Longitude);
 /// <summary>The planned route of one trip.</summary>
 /// <param name="Path">The planned path along the roads or tracks, first stop to last.</param>
 /// <param name="Stops">The stops the trip serves, in order.</param>
+/// <param name="StopTimes">Timetable of <paramref name="Stops"/>, same order; null when the source gave none.</param>
 /// <param name="PathIsApproximate">
 /// True when the source had no path for this trip and <see cref="Path"/> just joins the stops with straight lines.
 /// </param>
@@ -21,4 +22,8 @@ public sealed record TripRoute(
     TransitLine? Line,
     IReadOnlyList<GeoPoint> Path,
     IReadOnlyList<TransitStop> Stops,
-    bool PathIsApproximate);
+    bool PathIsApproximate,
+    IReadOnlyList<PlannedStopTime>? StopTimes = null);
+
+/// <summary>When a trip is due at a stop, as local clock times of the service day (a trip may pass midnight).</summary>
+public sealed record PlannedStopTime(string StopId, TimeOnly? AimedArrival, TimeOnly? AimedDeparture);

@@ -5,6 +5,7 @@ using VehicleTracking.Application.Ingestion;
 using VehicleTracking.Application.Live;
 using VehicleTracking.Application.Status;
 using VehicleTracking.Application.Transit;
+using VehicleTracking.Application.TripUpdates;
 using VehicleTracking.Application.Abstractions;
 
 namespace VehicleTracking.Application;
@@ -24,6 +25,8 @@ public static class DependencyInjection
         services.AddSingleton<TripRouteService>();
         services.AddSingleton<AlertService>();
         services.AddSingleton<IAlertVersionReader>(provider => provider.GetRequiredService<AlertService>());
+        services.AddSingleton<TripUpdateService>();
+        services.AddSingleton<TripProgressService>();
         services.AddScoped<VehicleHistoryService>();
         services.AddScoped<LiveStateWarmUp>();
         services.AddScoped<SystemStatusService>();
