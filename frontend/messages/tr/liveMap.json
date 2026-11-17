@@ -1,0 +1,16 @@
+{
+  "mapLabel": "Norveç'teki toplu taşıma araçlarının canlı haritası",
+  "loading": "Harita yükleniyor…",
+  "mapError": "Harita başlatılamadı. Tarayıcınız WebGL'i desteklemiyor olabilir.",
+  "emptyTitle": "Şu anda gösterilecek araç yok",
+  "emptyHint": "Araçlar konumlarını bildirir bildirmez burada görünecek.",
+  "noMatchTitle": "Filtrenize uyan araç yok",
+  "noMatchHint": "Araçları yeniden görmek için filtreyi değiştirin veya temizleyin.",
+  "filter": {
+    "label": "Hat, güzergah veya araç numarası",
+    "placeholder": "örn. M1, bir hat adı veya 2667",
+    "clear": "Filtreyi temizle",
+    "count": "{total, number} araçtan {shown, number} tanesi"
+  },
+  "noConnection": "Sunucuya ulaşılamıyor. Otomatik olarak yeniden deneniyor…"
+}

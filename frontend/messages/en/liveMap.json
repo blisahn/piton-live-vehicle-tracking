@@ -1,0 +1,16 @@
+{
+  "mapLabel": "Live map of public transport vehicles in Norway",
+  "loading": "Loading the map…",
+  "mapError": "The map could not be started. Your browser may not support WebGL.",
+  "emptyTitle": "No vehicles to show right now",
+  "emptyHint": "Vehicles will appear here as soon as they report their position.",
+  "noMatchTitle": "No vehicle matches your filter",
+  "noMatchHint": "Change or clear the filter to see vehicles again.",
+  "filter": {
+    "label": "Line, route or vehicle number",
+    "placeholder": "e.g. M1, a line name or 2667",
+    "clear": "Clear filter",
+    "count": "{shown, number} of {total, number} {total, plural, one {vehicle} other {vehicles}}"
+  },
+  "noConnection": "The server cannot be reached. Trying again automatically…"
+}
