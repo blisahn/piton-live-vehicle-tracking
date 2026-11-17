@@ -1,3 +1,4 @@
+import type alerts from "../messages/en/alerts.json";
 import type common from "../messages/en/common.json";
 import type connection from "../messages/en/connection.json";
 import type history from "../messages/en/history.json";
@@ -19,6 +20,7 @@ declare module "next-intl" {
       history: typeof history;
       status: typeof status;
       route: typeof route;
+      alerts: typeof alerts;
     };
   }
 }

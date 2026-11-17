@@ -14,6 +14,7 @@ export function AppHeader({ status }: { status?: ReactNode }) {
   const pathname = usePathname();
   const links = [
     { href: "/", label: t("nav.map") },
+    { href: "/alerts", label: t("nav.alerts") },
     { href: "/status", label: t("nav.status") },
   ] as const;
 

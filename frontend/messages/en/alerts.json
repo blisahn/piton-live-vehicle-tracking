@@ -1,0 +1,43 @@
+{
+  "title": "Service alerts",
+  "count": "{count, plural, =0 {No alerts} one {# alert} other {# alerts}}",
+  "loadError": "Could not load the alerts.",
+  "refreshFailed": "The latest refresh failed. Showing the last alerts received.",
+  "empty": {
+    "title": "No alerts",
+    "hint": "There are no alerts for this selection."
+  },
+  "filters": {
+    "line": "Line",
+    "lineSearch": "Search lines",
+    "lineSearchPlaceholder": "Line number or name",
+    "allLines": "All lines",
+    "noLineMatches": "No matching lines",
+    "stop": "Stop",
+    "allStops": "All stops",
+    "showInactive": "Show inactive alerts",
+    "clear": "Clear filters"
+  },
+  "new": "New",
+  "inactive": "Not active",
+  "noHeader": "(No title)",
+  "more": "Show more",
+  "less": "Show less",
+  "originalLanguage": {
+    "no": "Original in Norwegian",
+    "en": "Original in English",
+    "unknown": "Original language"
+  },
+  "period": {
+    "label": "Valid",
+    "range": "{start} – {end}",
+    "from": "From {start}",
+    "until": "Until {end}",
+    "invalid": "The validity period is incorrect in the source data."
+  },
+  "link": "More information",
+  "lines": "Lines",
+  "stops": "Stops",
+  "moreStops": "+{count} more",
+  "badge": "{count, plural, one {# alert} other {# alerts}}"
+}
