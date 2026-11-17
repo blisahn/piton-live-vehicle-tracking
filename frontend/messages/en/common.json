@@ -1,0 +1,21 @@
+{
+  "appName": "Live Vehicle Tracking",
+  "nav": {
+    "map": "Live map",
+    "status": "System status"
+  },
+  "language": {
+    "label": "Language",
+    "tr": "Türkçe",
+    "en": "English"
+  },
+  "state": {
+    "loading": "Loading…",
+    "errorTitle": "Something went wrong",
+    "retry": "Try again"
+  },
+  "timeZone": {
+    "label": "Norway time ({offset})",
+    "description": "All times are shown in Norway time ({offset})"
+  }
+}

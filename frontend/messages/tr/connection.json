@@ -1,0 +1,7 @@
+{
+  "label": "Bağlantı",
+  "connecting": "Bağlanıyor",
+  "connected": "Canlı",
+  "reconnecting": "Yeniden bağlanıyor",
+  "disconnected": "Bağlantı koptu"
+}

@@ -1,0 +1,7 @@
+{
+  "label": "Connection",
+  "connecting": "Connecting",
+  "connected": "Live",
+  "reconnecting": "Reconnecting",
+  "disconnected": "Disconnected"
+}

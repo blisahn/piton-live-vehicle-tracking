@@ -1,0 +1,21 @@
+{
+  "appName": "Canlı Araç Takip",
+  "nav": {
+    "map": "Canlı harita",
+    "status": "Sistem durumu"
+  },
+  "language": {
+    "label": "Dil",
+    "tr": "Türkçe",
+    "en": "English"
+  },
+  "state": {
+    "loading": "Yükleniyor…",
+    "errorTitle": "Bir sorun oluştu",
+    "retry": "Tekrar dene"
+  },
+  "timeZone": {
+    "label": "Norveç saati ({offset})",
+    "description": "Tüm saatler Norveç saatiyle gösterilir ({offset})"
+  }
+}
