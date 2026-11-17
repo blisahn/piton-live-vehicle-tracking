@@ -1,0 +1,14 @@
+{
+  "title": "Planned route",
+  "show": "Show route",
+  "hide": "Hide route",
+  "legend": "Purple dashed line: the planned route. Faded where the vehicle has already been, strong for the part still ahead. The measured path is blue.",
+  "line": "Line",
+  "nextStops": "Next stops",
+  "noNextStops": "No stops left on this trip",
+  "approximate": "The exact path is not available; stops are joined with straight lines",
+  "offRoute": "The vehicle is away from its planned route",
+  "noTrip": "No trip information",
+  "noTripHint": "This vehicle does not report which trip it is driving.",
+  "notFound": "No planned route is available for this trip"
+}

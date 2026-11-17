@@ -1,0 +1,31 @@
+{
+  "title": "Recent positions",
+  "range": {
+    "label": "Time range",
+    "15": "Last 15 minutes",
+    "30": "Last 30 minutes",
+    "60": "Last hour",
+    "180": "Last 3 hours"
+  },
+  "refresh": "Refresh",
+  "showOnMap": "Show measured path",
+  "hideFromMap": "Hide measured path",
+  "loadMore": "Load more",
+  "loadingMore": "Loading…",
+  "empty": "No positions in this range",
+  "emptyHint": "Try a wider time range. Data older than 3 hours is not kept.",
+  "none": "–",
+  "columns": {
+    "time": "Time",
+    "position": "Position",
+    "status": "Status",
+    "speed": "Speed"
+  },
+  "speedValue": "{value} km/h",
+  "status": {
+    "0": "Approaching stop",
+    "1": "At stop",
+    "2": "On the way"
+  },
+  "pathHint": "The dots are the positions the vehicle reported. Between them the line follows the planned route where the vehicle was on it, otherwise it is a straight line. Arrows show the direction of travel; the line grows as the vehicle moves."
+}

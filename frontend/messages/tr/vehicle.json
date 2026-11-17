@@ -1,0 +1,31 @@
+{
+  "title": "Araç {key}",
+  "close": "Araç ayrıntılarını kapat",
+  "empty": "Araç bulunamadı",
+  "emptyHint": "Bu araç konum göndermeyi bıraktı veya bağlantı eski.",
+  "stale": "Bağlantı kararsız olduğundan bu değerler güncel olmayabilir.",
+  "none": "–",
+  "fields": {
+    "route": "Hat",
+    "trip": "Sefer",
+    "stop": "Mevcut durak",
+    "status": "Durum",
+    "occupancy": "Doluluk",
+    "speed": "Hız",
+    "bearing": "Yön",
+    "lastUpdate": "Son güncelleme"
+  },
+  "units": { "speed": "{value} km/sa", "bearing": "{value}°" },
+  "status": { "0": "Durağa yaklaşıyor", "1": "Durakta", "2": "Yolda" },
+  "occupancy": {
+    "0": "Boş",
+    "1": "Çok sayıda boş koltuk",
+    "2": "Az sayıda boş koltuk",
+    "3": "Sadece ayakta yer var",
+    "4": "Ayakta çok sıkışık",
+    "5": "Dolu",
+    "6": "Yolcu almıyor",
+    "7": "Veri yok",
+    "8": "Binilemez"
+  }
+}

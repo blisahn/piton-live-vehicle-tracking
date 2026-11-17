@@ -1,0 +1,31 @@
+{
+  "title": "Son konumlar",
+  "range": {
+    "label": "Zaman aralığı",
+    "15": "Son 15 dakika",
+    "30": "Son 30 dakika",
+    "60": "Son 1 saat",
+    "180": "Son 3 saat"
+  },
+  "refresh": "Yenile",
+  "showOnMap": "Ölçülen yolu göster",
+  "hideFromMap": "Ölçülen yolu gizle",
+  "loadMore": "Daha fazla yükle",
+  "loadingMore": "Yükleniyor…",
+  "empty": "Bu aralıkta konum yok",
+  "emptyHint": "Daha geniş bir zaman aralığı deneyin. 3 saatten eski veriler tutulmaz.",
+  "none": "–",
+  "columns": {
+    "time": "Zaman",
+    "position": "Konum",
+    "status": "Durum",
+    "speed": "Hız"
+  },
+  "speedValue": "{value} km/sa",
+  "status": {
+    "0": "Durağa yaklaşıyor",
+    "1": "Durakta",
+    "2": "Yolda"
+  },
+  "pathHint": "Noktalar aracın bildirdiği konumlardır. Noktalar arasında çizgi, araç planlanan güzergah üzerindeyken güzergahı izler; aksi halde düz bir çizgidir. Oklar gidiş yönünü gösterir; araç ilerledikçe çizgi uzar."
+}
