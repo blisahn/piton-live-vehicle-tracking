@@ -17,7 +17,7 @@ services:
     network_mode: host
     ports: !reset []
     environment:
-      ConnectionStrings__Database: Host=localhost;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Database: Host=localhost;Port=5432;Database=${POSTGRES_DB:-vehicle_tracking};Username=${POSTGRES_USER:-vehicle_tracking};Password=${POSTGRES_PASSWORD:-vehicle_tracking}
 
   frontend:
     build:
