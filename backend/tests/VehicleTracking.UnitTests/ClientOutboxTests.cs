@@ -20,7 +20,7 @@ public class ClientOutboxTests
         var snapshot = SnapshotAt(5, Position("A:1"));
         _outbox.QueueSnapshot(snapshot);
 
-        var (taken, delta) = _outbox.Take();
+        var (taken, delta, _) = _outbox.Take();
 
         Assert.Same(snapshot, taken);
         Assert.Null(delta);
@@ -33,7 +33,7 @@ public class ClientOutboxTests
         _outbox.QueueChange(Change(6, new[] { Position("A:1", lat: 1) }));
         _outbox.QueueChange(Change(7, new[] { Position("A:1", lat: 2), Position("A:2") }));
 
-        var (_, delta) = _outbox.Take();
+        var (_, delta, _) = _outbox.Take();
 
         Assert.NotNull(delta);
         Assert.Equal(6, delta.FromSequence);
@@ -49,7 +49,7 @@ public class ClientOutboxTests
         _outbox.QueueChange(Change(5, new[] { Position("A:1") }));
         _outbox.QueueChange(Change(4, new[] { Position("A:2") }));
 
-        var (_, delta) = _outbox.Take();
+        var (_, delta, _) = _outbox.Take();
 
         Assert.Null(delta);
     }
@@ -60,7 +60,7 @@ public class ClientOutboxTests
         _outbox.QueueChange(Change(1, new[] { Position("A:1") }));
         _outbox.QueueChange(Change(2, removed: new[] { "A:1" }));
 
-        var (_, delta) = _outbox.Take();
+        var (_, delta, _) = _outbox.Take();
 
         Assert.Empty(delta!.Upserted);
         Assert.Equal(new[] { "A:1" }, delta.Removed);
@@ -72,7 +72,7 @@ public class ClientOutboxTests
         _outbox.QueueChange(Change(1, removed: new[] { "A:1" }));
         _outbox.QueueChange(Change(2, new[] { Position("A:1") }));
 
-        var (_, delta) = _outbox.Take();
+        var (_, delta, _) = _outbox.Take();
 
         Assert.Empty(delta!.Removed);
         Assert.Equal("A:1", Assert.Single(delta.Upserted).VehicleKey);
@@ -84,7 +84,7 @@ public class ClientOutboxTests
         _outbox.QueueChange(Change(1, new[] { Position("A:1") }));
 
         _outbox.QueueSnapshot(SnapshotAt(3));
-        var (snapshot, delta) = _outbox.Take();
+        var (snapshot, delta, _) = _outbox.Take();
 
         Assert.NotNull(snapshot);
         Assert.Null(delta);
@@ -97,7 +97,7 @@ public class ClientOutboxTests
         _outbox.QueueChange(Change(2, new[] { Position("A:1") }));
         _outbox.Take();
 
-        var (snapshot, delta) = _outbox.Take();
+        var (snapshot, delta, _) = _outbox.Take();
 
         Assert.Null(snapshot);
         Assert.Null(delta);
@@ -115,5 +115,36 @@ public class ClientOutboxTests
     public async Task Wait_for_work_returns_false_after_the_timeout_when_nothing_is_queued()
     {
         Assert.False(await _outbox.WaitForWorkAsync(TimeSpan.FromMilliseconds(50), CancellationToken.None));
+    }
+
+    [Fact]
+    public void Only_the_latest_alerts_version_is_kept_and_taking_clears_it()
+    {
+        _outbox.QueueAlertsVersion(2);
+        _outbox.QueueAlertsVersion(3);
+
+        Assert.Equal(3, _outbox.Take().AlertsVersion);
+        Assert.Null(_outbox.Take().AlertsVersion);
+    }
+
+    [Fact]
+    public void An_older_alerts_version_does_not_replace_a_newer_one()
+    {
+        _outbox.QueueAlertsVersion(5);
+        _outbox.QueueAlertsVersion(4);
+
+        Assert.Equal(5, _outbox.Take().AlertsVersion);
+    }
+
+    [Fact]
+    public void A_snapshot_does_not_clear_the_pending_alerts_version()
+    {
+        _outbox.QueueAlertsVersion(2);
+        _outbox.QueueSnapshot(SnapshotAt(5));
+
+        var (snapshot, _, alerts) = _outbox.Take();
+
+        Assert.NotNull(snapshot);
+        Assert.Equal(2, alerts);
     }
 }

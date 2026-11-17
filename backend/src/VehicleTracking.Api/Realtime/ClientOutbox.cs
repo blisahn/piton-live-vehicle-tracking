@@ -28,6 +28,10 @@ internal sealed class ClientOutbox
     private long _fromSequence;   // 0 means no delta is pending
     private long _toSequence;
 
+    // Latest wins, like everything here: a client only needs to know the newest version to refetch.
+    // A snapshot does not clear it, because alerts are independent of vehicle sequences.
+    private long? _pendingAlertsVersion;
+
     public void QueueSnapshot(LiveSnapshot snapshot)
     {
         lock (_sync)
@@ -66,6 +70,16 @@ internal sealed class ClientOutbox
         _signal.Writer.TryWrite(true);
     }
 
+    public void QueueAlertsVersion(long version)
+    {
+        lock (_sync)
+        {
+            // Never go backwards: a publish racing with Register could otherwise deliver an older number last.
+            if (_pendingAlertsVersion is null || version > _pendingAlertsVersion) _pendingAlertsVersion = version;
+        }
+        _signal.Writer.TryWrite(true);
+    }
+
     /// <summary>Waits until something is pending. Returns false if nothing arrived within <paramref name="timeout"/>.</summary>
     public async ValueTask<bool> WaitForWorkAsync(TimeSpan timeout, CancellationToken cancellationToken)
     {
@@ -84,7 +98,7 @@ internal sealed class ClientOutbox
     }
 
     /// <summary>Hands over everything pending and leaves the outbox empty.</summary>
-    public (LiveSnapshot? Snapshot, PendingDelta? Delta) Take()
+    public (LiveSnapshot? Snapshot, PendingDelta? Delta, long? AlertsVersion) Take()
     {
         lock (_sync)
         {
@@ -99,7 +113,9 @@ internal sealed class ClientOutbox
                 _removals.Clear();
                 _fromSequence = _toSequence = 0;
             }
-            return (snapshot, delta);
+            var alertsVersion = _pendingAlertsVersion;
+            _pendingAlertsVersion = null;
+            return (snapshot, delta, alertsVersion);
         }
     }
 }

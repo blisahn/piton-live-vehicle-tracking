@@ -1,4 +1,5 @@
 using VehicleTracking.Application.Abstractions;
+using VehicleTracking.Application.Alerts;
 
 namespace VehicleTracking.Application.Status;
 
@@ -9,6 +10,7 @@ public sealed class SystemStatusService(
     IConnectionCounter connections,
     IPositionSpool spool,
     ILiveState liveState,
+    AlertService alerts,
     TimeProvider time)
 {
     public async Task<SystemStatus> GetAsync(CancellationToken cancellationToken)
@@ -30,7 +32,9 @@ public sealed class SystemStatusService(
             DatabaseAvailable: rowsLastHour is not null,
             spool.PendingBatches,
             connections.ConnectedClients,
-            liveState.GetSnapshot().Vehicles.Count);
+            liveState.GetSnapshot().Vehicles.Count,
+            alerts.Query(null, null, includeInactive: false, now).Count,
+            alerts.Status.LastSuccessfulReadAt);
     }
 }
 
@@ -49,4 +53,6 @@ public sealed record SystemStatus(
     bool DatabaseAvailable,
     int PendingSpoolBatches,
     int ConnectedClients,
-    int TrackedVehicles);
+    int TrackedVehicles,
+    int ActiveAlerts,
+    DateTimeOffset? AlertsLastSuccessfulReadAt);

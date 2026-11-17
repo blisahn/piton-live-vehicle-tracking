@@ -10,12 +10,14 @@ namespace VehicleTracking.UnitTests;
 public class VehicleSocketHubTests
 {
     private readonly ILiveState _liveState = Substitute.For<ILiveState>();
+    private readonly IAlertVersionReader _alertVersion = Substitute.For<IAlertVersionReader>();
     private readonly VehicleSocketHub _hub;
 
     public VehicleSocketHubTests()
     {
         _liveState.GetSnapshot().Returns(new LiveSnapshot(3, new[] { Position("A:1") }));
-        _hub = new VehicleSocketHub(_liveState);
+        _alertVersion.Version.Returns(7L);
+        _hub = new VehicleSocketHub(_liveState, new Lazy<IAlertVersionReader>(() => _alertVersion));
     }
 
     private static LiveChange ChangeWith(long sequence, string key) =>
@@ -26,7 +28,7 @@ public class VehicleSocketHubTests
     {
         var outbox = _hub.Register();
 
-        var (snapshot, _) = outbox.Take();
+        var (snapshot, _, _) = outbox.Take();
 
         Assert.Equal(3, snapshot!.Sequence);
         Assert.Equal("A:1", Assert.Single(snapshot.Vehicles).VehicleKey);
@@ -72,5 +74,27 @@ public class VehicleSocketHubTests
 
         _hub.Unregister(second);
         Assert.Equal(0, _hub.ConnectedClients);
+    }
+
+    [Fact]
+    public void Register_queues_the_current_alerts_version()
+    {
+        Assert.Equal(7, _hub.Register().Take().AlertsVersion);
+    }
+
+    [Fact]
+    public void Publishing_an_alerts_version_reaches_every_client_without_touching_vehicles()
+    {
+        var first = _hub.Register();
+        var second = _hub.Register();
+        first.Take();
+        second.Take();
+
+        _hub.PublishAlertsVersion(8);
+
+        var (_, delta, version) = first.Take();
+        Assert.Null(delta);
+        Assert.Equal(8, version);
+        Assert.Equal(8, second.Take().AlertsVersion);
     }
 }

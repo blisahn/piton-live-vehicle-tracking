@@ -57,7 +57,7 @@ internal sealed class VehicleSocketSession(
             }
 
             // Mapping and serialising happen here, on this client's own loop and outside every lock.
-            var (snapshot, delta) = outbox.Take();
+            var (snapshot, delta, alertsVersion) = outbox.Take();
             if (snapshot is not null)
             {
                 await SendAsync(
@@ -72,6 +72,8 @@ internal sealed class VehicleSocketSession(
                     cancellationToken);
                 _lastSentSequence = delta.ToSequence;
             }
+            if (alertsVersion is { } version)
+                await SendAsync(new AlertsMessage(version), cancellationToken);
         }
     }
 
