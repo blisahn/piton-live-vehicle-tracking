@@ -47,5 +47,6 @@
     "none": "Bu sefer veya hattı için uyarı yok.",
     "seeAll": "Bu hattın tüm uyarıları"
   },
-  "translate": "Google Translate'te çevir"
+  "translate": "Google Translate'te çevir",
+  "opensInNewTab": "(yeni sekmede açılır)"
 }

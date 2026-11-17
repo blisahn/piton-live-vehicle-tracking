@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -356,9 +357,12 @@ export function AlertCard({
             href={alert.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="self-start text-sm text-primary underline underline-offset-4"
+            className="inline-flex items-center gap-1 self-start text-sm text-primary underline underline-offset-4"
           >
             {t("link")}
+            {hostOf(alert.url) ? <span className="text-muted-foreground no-underline">· {hostOf(alert.url)}</span> : null}
+            <ExternalLink className="size-3.5" aria-hidden />
+            <span className="sr-only">{t("opensInNewTab")}</span>
           </a>
         ) : null}
       </CardContent>
@@ -405,4 +409,13 @@ function googleTranslateUrl(
   const source = header?.language ?? description?.language ?? "auto";
   const params = new URLSearchParams({ sl: source, tl: locale, text, op: "translate" });
   return `https://translate.google.com/?${params.toString()}`;
+}
+
+/** The operator's site the alert links to, so the reader sees where the link leads before clicking. */
+function hostOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
 }

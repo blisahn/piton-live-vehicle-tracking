@@ -47,5 +47,6 @@
     "none": "No alerts for this trip or its line.",
     "seeAll": "All alerts for this line"
   },
-  "translate": "Translate with Google"
+  "translate": "Translate with Google",
+  "opensInNewTab": "(opens in a new tab)"
 }
