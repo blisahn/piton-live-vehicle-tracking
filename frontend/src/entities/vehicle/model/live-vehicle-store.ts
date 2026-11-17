@@ -21,7 +21,8 @@ export class LiveVehicleStore {
    * sequence we are at: something was missed, and the caller must reconnect for a new snapshot.
    */
   apply(message: ServerMessage): boolean {
-    if (message.type === "heartbeat") return true;
+    // Alerts are routed elsewhere by the socket; they never touch vehicles or the sequence.
+    if (message.type === "heartbeat" || message.type === "alerts") return true;
 
     if (message.type === "snapshot") {
       const changedKeys = new Set([...this.vehicles.keys(), ...message.vehicles.map((v) => v.key)]);

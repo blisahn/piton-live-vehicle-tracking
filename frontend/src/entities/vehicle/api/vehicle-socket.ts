@@ -1,3 +1,4 @@
+import { useAlertsVersionStore } from "../model/alerts-version-store";
 import type { ConnectionStatus } from "../model/connection-store";
 import type { LiveVehicleStore } from "../model/live-vehicle-store";
 import { serverMessageSchema } from "../model/schemas";
@@ -57,6 +58,11 @@ export class VehicleSocket {
       this.armSilenceTimer();
 
       const parsed = serverMessageSchema.safeParse(JSON.parse(String(event.data)));
+      // Alerts change independently of vehicle positions: no sequence, no effect on the connection status.
+      if (parsed.success && parsed.data.type === "alerts") {
+        useAlertsVersionStore.getState().setVersion(parsed.data.version);
+        return;
+      }
       if (!parsed.success || !this.store.apply(parsed.data)) {
         // Unreadable message or a gap in the sequence: start over from a snapshot.
         socket.close();

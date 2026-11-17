@@ -41,11 +41,18 @@ const heartbeatMessageSchema = z.object({
   serverTime: z.string(),
 });
 
+/** Service alerts changed; carries no vehicle sequence number. The alert list itself is fetched over REST. */
+const alertsMessageSchema = z.object({
+  type: z.literal("alerts"),
+  version: z.number().int(),
+});
+
 /** Every message the server can send on the vehicle socket. */
 export const serverMessageSchema = z.discriminatedUnion("type", [
   snapshotMessageSchema,
   deltaMessageSchema,
   heartbeatMessageSchema,
+  alertsMessageSchema,
 ]);
 
 export type ServerMessage = z.infer<typeof serverMessageSchema>;
