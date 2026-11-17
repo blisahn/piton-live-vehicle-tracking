@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { lineLabel, lineMatches, stopLabel, useLines, useStops, type Line, type Stop } from "@/entities/transit";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
 import { useAlerts, type AlertPeriod, type ServiceAlert } from "../api/alerts";
@@ -20,8 +21,8 @@ const MAX_CHIPS = 6;
 const MAX_STOPS_SHOWN = 3;
 const NEW_BADGE_MS = 15_000;
 
-const selectClass =
-  "h-8 w-full min-w-0 rounded-lg border border-input bg-background px-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
+/** Base UI selects need a non-empty value for "all"; this never collides with a real line or stop id. */
+const ALL = "__all__";
 
 export function AlertsPanel() {
   const t = useTranslations("alerts");
@@ -149,6 +150,7 @@ function Filters({
   const searchId = useId();
   const lineSelectId = useId();
   const stopSelectId = useId();
+  const stopLabelId = useId();
   const [search, setSearch] = useState("");
 
   const lineOptions = useMemo(() => {
@@ -170,6 +172,15 @@ function Filters({
     [stopOptions],
   );
 
+  const lineItems = useMemo(
+    () => [{ value: ALL, label: t("allLines") }, ...lineOptions.map((o) => ({ value: o.id, label: o.label }))],
+    [lineOptions, t],
+  );
+  const stopItems = useMemo(
+    () => [{ value: ALL, label: t("allStops") }, ...sortedStops.map((o) => ({ value: o.id, label: o.name }))],
+    [sortedStops, t],
+  );
+
   return (
     <Card>
       <CardContent className="flex flex-col gap-3">
@@ -186,44 +197,47 @@ function Filters({
               autoComplete="off"
               onChange={(event) => setSearch(event.target.value)}
             />
-            <label htmlFor={lineSelectId} className="sr-only">
-              {t("line")}
-            </label>
-            <select
-              id={lineSelectId}
-              className={selectClass}
-              value={lineId ?? ""}
-              onChange={(event) => onChange({ lineId: event.target.value || null })}
+            <Select
+              value={lineId ?? ALL}
+              items={lineItems}
+              onValueChange={(value) => onChange({ lineId: value === null || value === ALL ? null : value })}
             >
-              <option value="">{t("allLines")}</option>
-              {lineOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id={lineSelectId} aria-label={t("line")} className="w-full min-w-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                {lineItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {search.trim() && lineOptions.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("noLineMatches")}</p>
             ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={stopSelectId} className="text-sm font-medium">
+            <label id={stopLabelId} htmlFor={stopSelectId} className="text-sm font-medium">
               {t("stop")}
             </label>
-            <select
-              id={stopSelectId}
-              className={selectClass}
-              value={stopId ?? ""}
-              onChange={(event) => onChange({ stopId: event.target.value || null })}
+            <Select
+              value={stopId ?? ALL}
+              items={stopItems}
+              onValueChange={(value) => onChange({ stopId: value === null || value === ALL ? null : value })}
             >
-              <option value="">{t("allStops")}</option>
-              {sortedStops.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id={stopSelectId} aria-labelledby={stopLabelId} className="w-full min-w-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                {stopItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

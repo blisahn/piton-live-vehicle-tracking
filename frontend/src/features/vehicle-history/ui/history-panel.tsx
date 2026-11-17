@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { snapTrackToPath, type GeoPoint } from "@/shared/lib/geo";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
 import { useVehicleHistory } from "../api/history";
@@ -67,6 +69,8 @@ export function HistoryPanel({ vehicleKey, onTrackChange, snapPath = null }: His
     return () => onTrackChange(null);
   }, [showOnMap, vehicleKey, onTrackChange]);
 
+  const rangeItems = RANGE_PRESETS.map((preset) => ({ value: String(preset), label: t(`range.${preset}`) }));
+
   function chooseRange(value: string) {
     const next = Number(value);
     if (!isRangeMinutes(next)) return;
@@ -81,21 +85,22 @@ export function HistoryPanel({ vehicleKey, onTrackChange, snapPath = null }: His
       </h3>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <label className="sr-only" htmlFor="history-range">
-          {t("range.label")}
-        </label>
-        <select
-          id="history-range"
-          value={minutes}
-          onChange={(event) => chooseRange(event.target.value)}
-          className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
+        <Select
+          value={String(minutes)}
+          items={rangeItems}
+          onValueChange={(value) => value !== null && chooseRange(value)}
         >
-          {RANGE_PRESETS.map((preset) => (
-            <option key={preset} value={preset}>
-              {t(`range.${preset}`)}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger size="sm" aria-label={t("range.label")}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            {rangeItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button variant="outline" size="sm" onClick={() => setRange(computeRange(minutes))}>
           {t("refresh")}
         </Button>
@@ -119,38 +124,38 @@ export function HistoryPanel({ vehicleKey, onTrackChange, snapPath = null }: His
         <EmptyState title={t("empty")} hint={t("emptyHint")} />
       ) : (
         <div className="mt-3">
-          <div className="max-h-64 overflow-auto rounded-lg border">
-            <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-muted">
-                <tr>
-                  <th scope="col" className="px-2 py-1.5 font-medium">{t("columns.time")}</th>
-                  <th scope="col" className="px-2 py-1.5 font-medium">{t("columns.position")}</th>
-                  <th scope="col" className="px-2 py-1.5 font-medium">{t("columns.status")}</th>
-                  <th scope="col" className="px-2 py-1.5 font-medium">{t("columns.speed")}</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="max-h-64 overflow-auto rounded-lg border [&_[data-slot=table-container]]:overflow-visible">
+            <Table className="text-xs">
+              <TableHeader className="sticky top-0 bg-muted">
+                <TableRow>
+                  <TableHead className="h-8 px-2">{t("columns.time")}</TableHead>
+                  <TableHead className="h-8 px-2">{t("columns.position")}</TableHead>
+                  <TableHead className="h-8 px-2">{t("columns.status")}</TableHead>
+                  <TableHead className="h-8 px-2">{t("columns.speed")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {items.map((item) => {
                   const statusKey = item.status === null ? undefined : STATUS_KEYS[item.status];
                   return (
-                    <tr key={item.recordedAt} className="border-t">
-                      <td className="px-2 py-1 whitespace-nowrap">
+                    <TableRow key={item.recordedAt}>
+                      <TableCell className="px-2 py-1">
                         {format.dateTime(new Date(item.recordedAt), { timeStyle: "medium" })}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-2 py-1 tabular-nums">
                         {item.lat.toFixed(5)}, {item.lon.toFixed(5)}
-                      </td>
-                      <td className="px-2 py-1">{statusKey ? t(`status.${statusKey}`) : t("none")}</td>
-                      <td className="px-2 py-1 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-2 py-1">{statusKey ? t(`status.${statusKey}`) : t("none")}</TableCell>
+                      <TableCell className="px-2 py-1">
                         {item.speed === null
                           ? t("none")
                           : t("speedValue", { value: Math.round(item.speed * 3.6) })}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           {query.hasNextPage ? (
             <Button
