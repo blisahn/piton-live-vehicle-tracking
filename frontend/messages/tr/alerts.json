@@ -39,5 +39,12 @@
   "lines": "Hatlar",
   "stops": "Duraklar",
   "moreStops": "+{count} daha",
-  "badge": "{count} uyarı"
+  "badge": "{count} uyarı",
+  "vehicle": {
+    "title": "Bu aracı ilgilendiren uyarılar",
+    "thisTrip": "Bu sefer",
+    "lineWide": "Hattın geneli",
+    "none": "Bu sefer veya hattı için uyarı yok.",
+    "seeAll": "Bu hattın tüm uyarıları"
+  }
 }

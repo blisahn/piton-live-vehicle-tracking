@@ -9,6 +9,7 @@ import {
   type RouteOverlay,
   type TrackOverlay,
 } from "@/features/live-map";
+import { VehicleAlerts } from "@/features/alerts";
 import { VehiclePanel } from "@/features/vehicle-detail";
 import { HistoryPanel } from "@/features/vehicle-history";
 import { RouteSection } from "@/features/vehicle-route";
@@ -52,6 +53,7 @@ export function LiveMapScreen() {
       {selectedKey ? (
         <aside className="flex max-h-[55dvh] min-h-0 flex-col border-t md:max-h-none md:w-96 md:border-l md:border-t-0">
           <VehiclePanel vehicleKey={selectedKey} onClose={() => selectVehicle(null)}>
+            <VehicleAlerts vehicleKey={selectedKey} />
             <RouteSection vehicleKey={selectedKey} onRouteChange={setRoute} />
             <HistoryPanel vehicleKey={selectedKey} onTrackChange={setTrack} snapPath={snapPath} />
           </VehiclePanel>

@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useAlertsVersion } from "@/entities/vehicle";
 import { getJson } from "@/shared/api/http";
@@ -38,11 +38,13 @@ export type ServiceAlert = z.infer<typeof alertSchema>;
 export type AlertPeriod = z.infer<typeof periodSchema>;
 export type AlertsFilter = { lineId: string | null; stopId: string | null; includeInactive: boolean };
 
-export function useAlerts({ lineId, stopId, includeInactive }: AlertsFilter) {
+export function useAlerts({ lineId, stopId, includeInactive, enabled = true }: AlertsFilter & { enabled?: boolean }) {
+  const filter = { lineId, stopId, includeInactive };
   // A new version from the WebSocket changes the key and so triggers a refetch.
   const version = useAlertsVersion();
   return useQuery({
-    queryKey: ["alerts", { lineId, stopId, includeInactive }, version],
+    queryKey: ["alerts", filter, version],
+    enabled,
     queryFn: ({ signal }) => {
       const params = new URLSearchParams();
       if (lineId) params.set("lineId", lineId);
@@ -50,8 +52,10 @@ export function useAlerts({ lineId, stopId, includeInactive }: AlertsFilter) {
       params.set("includeInactive", String(includeInactive));
       return getJson(`/api/alerts?${params.toString()}`, alertsResponseSchema, signal);
     },
-    // Keep the list on screen while the next version loads, so it does not flash.
-    placeholderData: keepPreviousData,
+    // Keep the list on screen while the next version of the same filter loads, so it does not flash.
+    // A different filter (another line, another vehicle) must not show the old line's alerts meanwhile.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery && JSON.stringify(previousQuery.queryKey[1]) === JSON.stringify(filter) ? previous : undefined,
     // Safety net in case a WebSocket message is missed.
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,

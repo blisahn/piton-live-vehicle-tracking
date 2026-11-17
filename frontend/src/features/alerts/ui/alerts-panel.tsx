@@ -247,7 +247,7 @@ function Filters({
   );
 }
 
-function AlertCard({
+export function AlertCard({
   alert,
   lines,
   stops,

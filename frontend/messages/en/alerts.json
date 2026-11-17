@@ -39,5 +39,12 @@
   "lines": "Lines",
   "stops": "Stops",
   "moreStops": "+{count} more",
-  "badge": "{count, plural, one {# alert} other {# alerts}}"
+  "badge": "{count, plural, one {# alert} other {# alerts}}",
+  "vehicle": {
+    "title": "Alerts for this vehicle",
+    "thisTrip": "This trip",
+    "lineWide": "Whole line",
+    "none": "No alerts for this trip or its line.",
+    "seeAll": "All alerts for this line"
+  }
 }
