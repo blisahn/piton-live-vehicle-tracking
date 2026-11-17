@@ -1,0 +1,69 @@
+{
+  "title": "Sistem durumu",
+  "health": {
+    "healthy": "Sağlıklı",
+    "degraded": "Kısmen bozuk",
+    "down": "Çalışmıyor",
+    "healthyHint": "Araç verileri normal şekilde okunuyor ve kaydediliyor.",
+    "degradedHint": "Veri okunmaya devam ediyor ancak kayıt geride kalıyor ya da veritabanına ulaşılamıyor.",
+    "downHint": "Son 30 saniyede araç akışından başarılı bir okuma yapılamadı."
+  },
+  "refreshedAt": "Son yenileme {time}",
+  "refreshing": "Yenileniyor…",
+  "refreshFailed": "Son yenileme başarısız oldu. En son alınan veriler gösteriliyor.",
+  "loadError": "Sistem durumu yüklenemedi.",
+  "empty": {
+    "title": "Henüz başarılı bir okuma yok",
+    "hint": "Sunucu çalışıyor ancak araç akışını henüz başarıyla okuyamadı. Bu sayfa otomatik olarak güncellenir."
+  },
+  "noValue": "—",
+  "cards": {
+    "lastRead": {
+      "label": "Son başarılı okuma",
+      "ago": "{seconds, plural, =0 {şimdi} other {# saniye önce}}",
+      "none": "Henüz başarılı okuma yok"
+    },
+    "rowsLastHour": {
+      "label": "Son bir saatte yazılan satır",
+      "unavailable": "Veritabanına ulaşılamadığı için bilinmiyor"
+    },
+    "failedReads": {
+      "label": "Başarısız okumalar",
+      "hint": "Sunucunun başlamasından beri"
+    },
+    "clients": {
+      "label": "Bağlı istemciler",
+      "hint": "Açık WebSocket bağlantıları"
+    },
+    "duration": {
+      "label": "Son okuma süresi",
+      "value": "{ms} ms"
+    },
+    "tracked": {
+      "label": "Takip edilen araçlar"
+    },
+    "entities": {
+      "label": "Son okuma",
+      "total": "Akışta {count, plural, other {# varlık}}",
+      "changed": "{count} aracın konumu değişti",
+      "rejected": "{count} kayıt kullanılamaz bulunup atıldı"
+    },
+    "successfulReads": {
+      "label": "Başarılı okumalar",
+      "hint": "Sunucunun başlamasından beri"
+    },
+    "spool": {
+      "label": "Bekleyen kuyruk grupları",
+      "hint": "Okundu ancak henüz veritabanına yazılmadı"
+    },
+    "database": {
+      "label": "Veritabanı",
+      "available": "Erişilebilir",
+      "unreachable": "Erişilemiyor"
+    },
+    "browser": {
+      "label": "Bu tarayıcının canlı bağlantısı",
+      "hint": "Bu sayfanın WebSocket durumu"
+    }
+  }
+}

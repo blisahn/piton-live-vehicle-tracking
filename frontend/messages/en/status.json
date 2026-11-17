@@ -1,0 +1,69 @@
+{
+  "title": "System status",
+  "health": {
+    "healthy": "Healthy",
+    "degraded": "Degraded",
+    "down": "Down",
+    "healthyHint": "Vehicle data is being read and stored normally.",
+    "degradedHint": "Data is still being read, but storage is falling behind or the database is unreachable.",
+    "downHint": "No successful read from the vehicle feed in the last 30 seconds."
+  },
+  "refreshedAt": "Last refreshed {time}",
+  "refreshing": "Refreshing…",
+  "refreshFailed": "The latest refresh failed. Showing the last data received.",
+  "loadError": "Could not load the system status.",
+  "empty": {
+    "title": "No successful read yet",
+    "hint": "The backend is running but has not read the vehicle feed successfully. This page updates automatically."
+  },
+  "noValue": "—",
+  "cards": {
+    "lastRead": {
+      "label": "Last successful read",
+      "ago": "{seconds, plural, =0 {just now} one {# second ago} other {# seconds ago}}",
+      "none": "No successful read yet"
+    },
+    "rowsLastHour": {
+      "label": "Rows written in the last hour",
+      "unavailable": "Unknown while the database is unreachable"
+    },
+    "failedReads": {
+      "label": "Failed reads",
+      "hint": "Since the backend started"
+    },
+    "clients": {
+      "label": "Connected clients",
+      "hint": "Open WebSocket connections"
+    },
+    "duration": {
+      "label": "Last read duration",
+      "value": "{ms} ms"
+    },
+    "tracked": {
+      "label": "Tracked vehicles"
+    },
+    "entities": {
+      "label": "Last read",
+      "total": "{count, plural, one {# entity} other {# entities}} in the feed",
+      "changed": "{count} changed position",
+      "rejected": "{count} rejected as unusable"
+    },
+    "successfulReads": {
+      "label": "Successful reads",
+      "hint": "Since the backend started"
+    },
+    "spool": {
+      "label": "Pending spool batches",
+      "hint": "Read but not yet written to the database"
+    },
+    "database": {
+      "label": "Database",
+      "available": "Available",
+      "unreachable": "Unreachable"
+    },
+    "browser": {
+      "label": "This browser's live connection",
+      "hint": "WebSocket status of this page"
+    }
+  }
+}
