@@ -206,6 +206,9 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
         style: OSM_STYLE,
         center: [10.75, 59.91],
         zoom: 9,
+        // Our own observer below resizes and redraws in the same frame; MapLibre's built-in one
+        // resizes a frame early and would bring the blank frame back.
+        trackResize: false,
       });
     } catch {
       // WebGL unavailable: the constructor throws. Report it after the effect has finished.
@@ -215,14 +218,17 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
     mapRef.current = map;
     map.addControl(new NavigationControl(), "top-right");
 
-    // MapLibre follows window resizes by itself, but not its container (the side panel can be dragged).
-    let resizeFrame: number | null = null;
+    // The container changes size while the side panel slides or is dragged. Resizing a canvas
+    // clears it, so resizing in one frame and drawing in the next shows a blank (white) frame.
+    // A ResizeObserver callback runs after layout but before paint: resizing and redrawing
+    // synchronously there means the browser never paints the cleared canvas.
+    // isStyleLoaded() is false while tiles are still loading, which is exactly when a resize
+    // reveals new ones, so readiness is tracked with the load event instead.
+    let loaded = false;
+    map.once("load", () => (loaded = true));
     const resizeObserver = new ResizeObserver(() => {
-      if (resizeFrame !== null) return;
-      resizeFrame = requestAnimationFrame(() => {
-        resizeFrame = null;
-        map.resize();
-      });
+      map.resize();
+      if (loaded) map.redraw();
     });
     resizeObserver.observe(container);
 
@@ -420,7 +426,6 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
     return () => {
       unsubscribe();
       resizeObserver.disconnect();
-      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
       if (frame !== null) cancelAnimationFrame(frame);
       scheduleUpdateRef.current = () => {};
       mapRef.current = null;
