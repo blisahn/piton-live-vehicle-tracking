@@ -12,5 +12,15 @@
     "clear": "Filtreyi temizle",
     "count": "{total, number} araçtan {shown, number} tanesi"
   },
-  "noConnection": "Sunucuya ulaşılamıyor. Otomatik olarak yeniden deneniyor…"
+  "noConnection": "Sunucuya ulaşılamıyor. Otomatik olarak yeniden deneniyor…",
+  "legend": {
+    "title": "Araç türü",
+    "bus": "Otobüs",
+    "coach": "Şehirlerarası otobüs",
+    "rail": "Tren",
+    "tram": "Tramvay",
+    "metro": "Metro",
+    "water": "Feribot / tekne",
+    "unknown": "Türü bilinmiyor"
+  }
 }

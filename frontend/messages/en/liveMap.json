@@ -12,5 +12,15 @@
     "clear": "Clear filter",
     "count": "{shown, number} of {total, number} {total, plural, one {vehicle} other {vehicles}}"
   },
-  "noConnection": "The server cannot be reached. Trying again automatically…"
+  "noConnection": "The server cannot be reached. Trying again automatically…",
+  "legend": {
+    "title": "Vehicle type",
+    "bus": "Bus",
+    "coach": "Coach",
+    "rail": "Train",
+    "tram": "Tram",
+    "metro": "Metro",
+    "water": "Ferry / boat",
+    "unknown": "Type unknown"
+  }
 }
