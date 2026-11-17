@@ -1,0 +1,65 @@
+{
+  "feed_url": "https://api.entur.io/realtime/v1/gtfs-rt/vehicle-positions",
+  "started_at_utc": "2026-11-16T13:52:53Z",
+  "duration_seconds": 1802.2,
+  "poll_interval_seconds": 3.0,
+  "retention_hours": 3.0,
+  "counters": {
+    "polls": 500,
+    "entities_seen": 4240363,
+    "entities_with_invalid_position": 2747,
+    "measurements_older_than_retention": 101,
+    "rows": 466989,
+    "repeated_snapshots": 168,
+    "header_ts_regressions": 48,
+    "entity_ts_regressions": 77809
+  },
+  "snapshot_bytes": {
+    "min": 1694876,
+    "max": 1724397
+  },
+  "entities_per_snapshot": {
+    "min": 8391,
+    "max": 8547
+  },
+  "fetch_ms": {
+    "p50": 699.8965740203857,
+    "p95": 7704.189300537109,
+    "max": 23944.331884384155
+  },
+  "distinct_vehicle_keys_seen": 3802,
+  "vehicle_ids_shared_across_codespaces": 315,
+  "seconds_between_measurements_per_vehicle": {
+    "p10": 3,
+    "p50": 8,
+    "p90": 19
+  },
+  "rows": {
+    "first_poll": 3380,
+    "steady_state_total": 463609,
+    "per_hour": 927643,
+    "per_retention_window": 2782930
+  },
+  "first_snapshot": {
+    "entities": 8422,
+    "distinct_vehicle_keys": 3478,
+    "vehicle_keys_with_multiple_entities": 1544,
+    "missing_pct": {
+      "route_id": 10.6,
+      "trip_id": 0.0,
+      "bearing": 33.4,
+      "speed": 95.1,
+      "current_status": 3.1,
+      "stop_id": 3.1,
+      "occupancy": 61.7
+    },
+    "position_age_seconds": {
+      "p10": 13.946711778640747,
+      "p50": 3381.9467117786407,
+      "p90": 19578.94671177864,
+      "max": 43201.94671177864
+    },
+    "fresh_within_60s": 2644,
+    "within_retention": 5906
+  }
+}
