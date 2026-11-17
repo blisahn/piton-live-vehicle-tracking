@@ -16,8 +16,15 @@
     "bearing": "Bearing",
     "lastUpdate": "Last update"
   },
-  "units": { "speed": "{value} km/h", "bearing": "{value}°" },
-  "status": { "0": "Approaching stop", "1": "At stop", "2": "On the way" },
+  "units": {
+    "speed": "{value} km/h",
+    "bearing": "{value}°"
+  },
+  "status": {
+    "0": "Approaching stop",
+    "1": "At stop",
+    "2": "On the way"
+  },
   "occupancy": {
     "0": "Empty",
     "1": "Many seats available",
@@ -28,5 +35,7 @@
     "6": "Not accepting passengers",
     "7": "No data available",
     "8": "Not boardable"
-  }
+  },
+  "showPanel": "Show detail panel",
+  "hidePanel": "Hide detail panel"
 }

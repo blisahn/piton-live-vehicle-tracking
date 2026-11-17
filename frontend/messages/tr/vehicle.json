@@ -16,8 +16,15 @@
     "bearing": "Yön",
     "lastUpdate": "Son güncelleme"
   },
-  "units": { "speed": "{value} km/sa", "bearing": "{value}°" },
-  "status": { "0": "Durağa yaklaşıyor", "1": "Durakta", "2": "Yolda" },
+  "units": {
+    "speed": "{value} km/sa",
+    "bearing": "{value}°"
+  },
+  "status": {
+    "0": "Durağa yaklaşıyor",
+    "1": "Durakta",
+    "2": "Yolda"
+  },
   "occupancy": {
     "0": "Boş",
     "1": "Çok sayıda boş koltuk",
@@ -28,5 +35,7 @@
     "6": "Yolcu almıyor",
     "7": "Veri yok",
     "8": "Binilemez"
-  }
+  },
+  "showPanel": "Detay panelini göster",
+  "hidePanel": "Detay panelini gizle"
 }

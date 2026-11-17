@@ -1,7 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { PanelRightClose, PanelRightOpen } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePanelRef } from "react-resizable-panels";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useIsDesktop } from "@/shared/lib/use-media-query";
@@ -48,11 +52,45 @@ export function LiveMapScreen() {
   const isDesktop = useIsDesktop();
   const [detailSize] = useState(readDetailSize);
 
-  const detail = selectedKey ? (
-    <VehiclePanel vehicleKey={selectedKey} onClose={() => selectVehicle(null)}>
-      <VehicleAlerts vehicleKey={selectedKey} />
-      <RouteSection vehicleKey={selectedKey} onRouteChange={setRoute} />
-      <HistoryPanel vehicleKey={selectedKey} onTrackChange={setTrack} snapPath={snapPath} />
+  // Desktop: the panel stays mounted and slides open or closed, instead of appearing in one jump.
+  // "hidden" is the user folding it away with the toggle; the vehicle stays selected meanwhile.
+  const [hidden, setHidden] = useState(false);
+  const panelOpen = selectedKey !== null && !hidden;
+  const detailPanelRef = usePanelRef();
+  const [animating, setAnimating] = useState(false);
+  const animationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep showing the last vehicle while the panel slides shut, so it does not empty out mid-animation.
+  const [shownKey, setShownKey] = useState(selectedKey);
+  if (selectedKey !== null && shownKey !== selectedKey) setShownKey(selectedKey);
+  // A newly selected vehicle always opens the panel, even if it was folded away.
+  const [hiddenFor, setHiddenFor] = useState(selectedKey);
+  if (hiddenFor !== selectedKey) {
+    setHiddenFor(selectedKey);
+    if (hidden) setHidden(false);
+  }
+
+  useEffect(() => {
+    const panel = detailPanelRef.current;
+    if (!isDesktop || !panel) return;
+    if (panelOpen === !panel.isCollapsed()) return;
+    // The transition is only switched on for these programmatic moves; dragging the handle stays immediate.
+    setAnimating(true);
+    if (panelOpen) panel.expand();
+    else panel.collapse();
+    if (animationTimer.current) clearTimeout(animationTimer.current);
+    animationTimer.current = setTimeout(() => setAnimating(false), PANEL_ANIMATION_MS);
+  }, [panelOpen, isDesktop, detailPanelRef]);
+  useEffect(() => () => {
+    if (animationTimer.current) clearTimeout(animationTimer.current);
+  }, []);
+
+  const panelKey = selectedKey ?? shownKey;
+  const detail = panelKey ? (
+    <VehiclePanel vehicleKey={panelKey} onClose={() => selectVehicle(null)}>
+      <VehicleAlerts vehicleKey={panelKey} />
+      <RouteSection vehicleKey={panelKey} onRouteChange={setRoute} />
+      <HistoryPanel vehicleKey={panelKey} onTrackChange={setTrack} snapPath={snapPath} />
     </VehiclePanel>
   ) : null;
 
@@ -61,9 +99,14 @@ export function LiveMapScreen() {
     // md and up: a detail panel beside the map that can be dragged wider. Below: a bottom drawer (see below).
     <ResizablePanelGroup
       orientation="horizontal"
-      className="min-h-0 flex-1"
+      className={cn(
+        "min-h-0 flex-1",
+        animating && "[&>[data-panel]]:transition-[flex-grow] [&>[data-panel]]:duration-300 [&>[data-panel]]:ease-out",
+      )}
       onLayoutChanged={(layout) => {
-        if (layout[DETAIL_PANEL_ID] !== undefined) saveDetailSize(layout[DETAIL_PANEL_ID]);
+        // A collapsed panel reports 0; remember only real widths.
+        const size = layout[DETAIL_PANEL_ID];
+        if (size !== undefined && size > 0) saveDetailSize(size);
       }}
     >
       <ResizablePanel id="map" minSize="30%">
@@ -73,19 +116,36 @@ export function LiveMapScreen() {
             <VehicleFilter />
           </div>
           <LiveMap selectedKey={selectedKey} onSelect={selectVehicle} filter={filter} track={track} route={route} />
+          {isDesktop && selectedKey ? (
+            // Below the zoom controls, like a sidebar trigger: folds the panel away without losing the selection.
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="absolute right-2.5 top-[112px] z-10 bg-background shadow-sm"
+              aria-label={panelOpen ? t("hidePanel") : t("showPanel")}
+              aria-expanded={panelOpen}
+              aria-controls={DETAIL_CONTENT_ID}
+              onClick={() => setHidden((value) => !value)}
+            >
+              {panelOpen ? <PanelRightClose aria-hidden /> : <PanelRightOpen aria-hidden />}
+            </Button>
+          ) : null}
         </section>
       </ResizablePanel>
 
-      {selectedKey && isDesktop ? (
+      {isDesktop ? (
         <>
-          <ResizableHandle withHandle />
+          <ResizableHandle withHandle className={cn(!panelOpen && "hidden")} />
           <ResizablePanel
             id={DETAIL_PANEL_ID}
-            defaultSize={`${detailSize}%`}
+            panelRef={detailPanelRef}
+            collapsible
+            collapsedSize="0%"
+            defaultSize={panelOpen ? `${detailSize}%` : "0%"}
             minSize={DETAIL_MIN_PX}
             maxSize="50%"
           >
-            <div className="h-full min-h-0 border-l">{detail}</div>
+            <div id={DETAIL_CONTENT_ID} className={cn("h-full min-h-0 overflow-hidden", panelOpen && "border-l")}>{detail}</div>
           </ResizablePanel>
         </>
       ) : null}
@@ -116,9 +176,11 @@ export function LiveMapScreen() {
 
 const DRAWER_SNAP_POINTS = ["140px", 0.5, 0.92];
 const DETAIL_PANEL_ID = "detail";
+const DETAIL_CONTENT_ID = "vehicle-detail-panel";
 const DETAIL_MIN_PX = 320;
 const DETAIL_DEFAULT = 28;
 const DETAIL_STORAGE_KEY = "live-map:detail-size";
+const PANEL_ANIMATION_MS = 320;
 
 /** The detail panel's last width in percent. Read only once the panel is about to show (after hydration). */
 function readDetailSize(): number {
