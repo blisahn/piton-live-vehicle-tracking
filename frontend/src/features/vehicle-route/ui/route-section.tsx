@@ -123,7 +123,8 @@ export function RouteSection({ vehicleKey, onRouteChange }: RouteSectionProps) {
             )}
           </div>
           {route.pathIsApproximate ? <p className="text-xs text-muted-foreground">{t("approximate")}</p> : null}
-          {view.offRouteMeters > OFF_ROUTE_METERS ? (
+          {/* Distance from straight lines between stops says nothing, so an approximate route never warns. */}
+          {!route.pathIsApproximate && view.offRouteMeters > OFF_ROUTE_METERS ? (
             <p role="status" className="text-xs text-muted-foreground">
               {t("offRoute")}
             </p>
