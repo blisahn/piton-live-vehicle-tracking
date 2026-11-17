@@ -1,0 +1,55 @@
+name: vehicle-tracking
+
+services:
+  db:
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      ConnectionStrings__Database: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Feed__VehiclePositionsUrl: ${FEED_VEHICLE_POSITIONS_URL}
+      Feed__PollInterval: ${FEED_POLL_INTERVAL}
+      Feed__ClientName: ${FEED_CLIENT_NAME}
+      Retention__Period: ${RETENTION_PERIOD}
+      Spool__Directory: /var/lib/vehicle-tracking/spool
+      Cors__AllowedOrigins__0: http://localhost:${FRONTEND_PORT:-3000}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      # Positions not yet written to the database live here; the volume keeps them across restarts.
+      - spool-data:/var/lib/vehicle-tracking/spool
+    # The backend must come up, and keep collecting, even while the database is down.
+    depends_on:
+      db:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # The address the browser uses to reach the backend (not the container-to-container address).
+        NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT:-8080}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  spool-data:

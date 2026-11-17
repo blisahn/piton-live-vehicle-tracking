@@ -1,0 +1,27 @@
+# Optional override for Linux machines where containers cannot reach the internet through
+# Docker's bridge network (a host firewall or routing issue). It builds and runs everything
+# on the host's own network instead:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.hostnet.yml up --build
+#
+# Not needed on a normally configured Docker installation; use plain `docker compose up` there.
+services:
+  db:
+    network_mode: host
+    ports: !reset []
+
+  backend:
+    build:
+      context: ./backend
+      network: host
+    network_mode: host
+    ports: !reset []
+    environment:
+      ConnectionStrings__Database: Host=localhost;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+
+  frontend:
+    build:
+      context: ./frontend
+      network: host
+    network_mode: host
+    ports: !reset []

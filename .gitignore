@@ -1,0 +1,31 @@
+# secrets / local config
+.env
+*.local
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+# copied from node_modules by the predev/prebuild scripts
+frontend/public/maplibre-gl-worker.mjs
+
+# Python
+__pycache__/
+
+# case document provided by Piton, not part of the solution
+fullstack_case_study.pdf
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
