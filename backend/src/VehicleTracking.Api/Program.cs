@@ -17,6 +17,10 @@ builder.Services.AddOptions<AlertOptions>()
     .BindConfiguration(AlertOptions.SectionName)
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<TripUpdateOptions>()
+    .BindConfiguration(TripUpdateOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddOptions<RetentionOptions>()
     .BindConfiguration(RetentionOptions.SectionName)
     .ValidateDataAnnotations()

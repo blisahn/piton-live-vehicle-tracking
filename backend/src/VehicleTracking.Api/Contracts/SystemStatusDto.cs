@@ -18,7 +18,9 @@ public sealed record SystemStatusDto(
     int ConnectedClients,
     int TrackedVehicles,
     int ActiveAlerts,
-    DateTimeOffset? AlertsLastSuccessfulReadAt)
+    DateTimeOffset? AlertsLastSuccessfulReadAt,
+    DateTimeOffset? TripUpdatesLastSuccessfulReadAt,
+    int TrackedTrips)
 {
     public static SystemStatusDto From(SystemStatus s) => new(
         s.ServerTime,
@@ -35,5 +37,7 @@ public sealed record SystemStatusDto(
         s.ConnectedClients,
         s.TrackedVehicles,
         s.ActiveAlerts,
-        s.AlertsLastSuccessfulReadAt);
+        s.AlertsLastSuccessfulReadAt,
+        s.TripUpdatesLastSuccessfulReadAt,
+        s.TrackedTrips);
 }

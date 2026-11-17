@@ -1,4 +1,5 @@
 using VehicleTracking.Application.Transit;
+using VehicleTracking.Application.TripUpdates;
 
 namespace VehicleTracking.Api.Contracts;
 
@@ -32,4 +33,42 @@ public sealed record TripRouteDto(
         route.Path.Select(point => new PointDto(point.Latitude, point.Longitude)).ToList(),
         route.Stops.Select(StopDto.From).ToList(),
         route.PathIsApproximate);
+}
+
+/// <summary>Where a trip stands against its timetable. Times are ISO 8601 with offset.</summary>
+/// <param name="DelaySeconds">Delay at the next upcoming stop; negative is early, null when unknown.</param>
+public sealed record TripProgressDto(
+    string TripId,
+    DateOnly? StartDate,
+    DateTimeOffset? UpdatedAt,
+    bool Canceled,
+    int? DelaySeconds,
+    IReadOnlyList<StopProgressDto> Stops)
+{
+    public static TripProgressDto From(TripProgressView view) => new(
+        view.TripId,
+        view.StartDate,
+        view.UpdatedAt,
+        view.Canceled,
+        view.DelaySeconds,
+        view.Stops.Select(StopProgressDto.From).ToList());
+}
+
+/// <param name="Name">Null when the planned route is unknown.</param>
+/// <param name="AimedArrival">Timetable times and their expected counterparts are null when no timetable is known.</param>
+public sealed record StopProgressDto(
+    int Sequence,
+    string StopId,
+    string? Name,
+    DateTimeOffset? AimedArrival,
+    DateTimeOffset? ExpectedArrival,
+    DateTimeOffset? AimedDeparture,
+    DateTimeOffset? ExpectedDeparture,
+    int? ArrivalDelaySeconds,
+    int? DepartureDelaySeconds,
+    bool Skipped)
+{
+    public static StopProgressDto From(StopProgress s) => new(
+        s.Sequence, s.StopId, s.Name, s.AimedArrival, s.ExpectedArrival, s.AimedDeparture, s.ExpectedDeparture,
+        s.ArrivalDelaySeconds, s.DepartureDelaySeconds, s.Skipped);
 }
