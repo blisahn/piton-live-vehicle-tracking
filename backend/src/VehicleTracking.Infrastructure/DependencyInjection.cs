@@ -36,6 +36,13 @@ public static class DependencyInjection
             http.DefaultRequestHeaders.Add("ET-Client-Name", feed.ClientName);
         });
 
+        services.AddHttpClient<IAlertFeedSource, EnturAlertFeedSource>((provider, http) =>
+        {
+            var feed = provider.GetRequiredService<IOptions<FeedOptions>>().Value;
+            http.Timeout = FeedTimeout;
+            http.DefaultRequestHeaders.Add("ET-Client-Name", feed.ClientName);
+        });
+
         services.AddOptions<JourneyPlannerOptions>()
             .BindConfiguration(JourneyPlannerOptions.SectionName)
             .ValidateDataAnnotations()
@@ -67,6 +74,7 @@ public static class DependencyInjection
 
         services.AddHostedService<DatabaseInitializer>();
         services.AddHostedService<FeedPollingWorker>();
+        services.AddHostedService<AlertPollingWorker>();
         services.AddHostedService<PositionWriterWorker>();
         services.AddHostedService<RetentionWorker>();
         services.AddHostedService<ReferenceDataWorker>();

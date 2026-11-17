@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using VehicleTracking.Application.Alerts;
 using VehicleTracking.Application.History;
 using VehicleTracking.Application.Ingestion;
 using VehicleTracking.Application.Live;
@@ -21,6 +22,8 @@ public static class DependencyInjection
         services.AddSingleton<ReferenceDataService>();
         services.AddSingleton<ILivePublisher>(provider => provider.GetRequiredService<ReferenceDataService>());
         services.AddSingleton<TripRouteService>();
+        services.AddSingleton<AlertService>();
+        services.AddSingleton<IAlertVersionReader>(provider => provider.GetRequiredService<AlertService>());
         services.AddScoped<VehicleHistoryService>();
         services.AddScoped<LiveStateWarmUp>();
         services.AddScoped<SystemStatusService>();
