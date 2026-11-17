@@ -8,7 +8,11 @@ import { useLiveVehicle } from "@/entities/vehicle";
 import { ApiError } from "@/shared/api/http";
 import { locateStopsAlongPath, projectOntoPath, splitPathAt, type GeoPoint, type SegmentWindow } from "@/shared/lib/geo";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
+import { useTripProgress } from "../api/progress";
 import { useTripRoute } from "../api/route";
+import { matchProgressStop } from "../model/progress";
+import { DelayBadge } from "./delay-badge";
+import { StopTimes } from "./stop-times";
 
 /** Same shape as the map's overlay type; features cannot import each other, so the page connects them. */
 export type RouteOverlay = {
@@ -46,6 +50,9 @@ export function RouteSection({ vehicleKey, onRouteChange }: RouteSectionProps) {
 
   const query = useTripRoute(tripId, show);
   const route = query.data;
+  // Realtime schedule is fetched with the vehicle, not with the toggle: the badge shows while the route is hidden.
+  const progressQuery = useTripProgress(tripId);
+  const progressStops = progressQuery.data?.stops;
 
   // Where each stop lies along the path. Depends on the route only, not on every vehicle update.
   const stopProjections = useMemo(
@@ -114,9 +121,19 @@ export function RouteSection({ vehicleKey, onRouteChange }: RouteSectionProps) {
             <p className="text-muted-foreground">{t("nextStops")}</p>
             {view.nextStops.length > 0 ? (
               <ol className="list-inside list-decimal">
-                {view.nextStops.map((stop) => (
-                  <li key={stop.id}>{stop.name}</li>
-                ))}
+                {view.nextStops.map((stop) => {
+                  const index = route.stops.findIndex((s) => s.id === stop.id);
+                  const progressStop = progressStops ? matchProgressStop(progressStops, stop.id, index) : undefined;
+                  return (
+                    <li key={stop.id}>
+                      <span className={progressStop?.skipped ? "line-through" : undefined}>{stop.name}</span>
+                      {progressStop?.skipped ? (
+                        <span className="ml-1 text-xs text-muted-foreground">({t("delay.skipped")})</span>
+                      ) : null}
+                      {progressStop && !progressStop.skipped ? <StopTimes stop={progressStop} /> : null}
+                    </li>
+                  );
+                })}
               </ol>
             ) : (
               <p>{t("noNextStops")}</p>
@@ -138,9 +155,18 @@ export function RouteSection({ vehicleKey, onRouteChange }: RouteSectionProps) {
   return (
     <section aria-labelledby="route-title" className="border-t p-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 id="route-title" className="text-sm font-semibold">
-          {t("title")}
-        </h3>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 id="route-title" className="text-sm font-semibold">
+            {t("title")}
+          </h3>
+          {tripId ? (
+            <DelayBadge
+              progress={progressQuery.data}
+              isPending={progressQuery.isPending}
+              isError={progressQuery.isError}
+            />
+          ) : null}
+        </div>
         <Button
           variant={show ? "default" : "outline"}
           size="sm"
