@@ -271,6 +271,8 @@ export function AlertCard({
   const descriptionNote = fallbackNote(description);
 
   const shownStops = alert.stopIds.slice(0, MAX_STOPS_SHOWN);
+  const translateUrl =
+    header?.isFallback || description?.isFallback ? googleTranslateUrl(header, description, locale) : null;
 
   return (
     <Card>
@@ -280,8 +282,19 @@ export function AlertCard({
           {!alert.active ? <Badge variant="outline">{t("inactive")}</Badge> : null}
         </div>
 
-        <h2 className="break-words text-base font-semibold">{header?.text ?? t("noHeader")}</h2>
-        {headerNote ? <p className="text-xs text-muted-foreground">{headerNote}</p> : null}
+        <h2 className="break-words text-base font-semibold" lang={header?.language ?? undefined}>
+          {header?.text ?? t("noHeader")}
+        </h2>
+        {headerNote || translateUrl ? (
+          <p className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+            {headerNote ? <span>{headerNote}</span> : null}
+            {translateUrl ? (
+              <a href={translateUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                {t("translate")}
+              </a>
+            ) : null}
+          </p>
+        ) : null}
 
         {description ? (
           <div className="flex flex-col gap-1">
@@ -378,4 +391,18 @@ function Period({ alert }: { alert: ServiceAlert }) {
       <span className="font-medium">{t("label")}:</span> {lines.join("; ")}
     </p>
   );
+}
+
+/** We do not translate alert texts ourselves; this link opens them in Google Translate (no key, nothing sent from our backend). */
+const MAX_TRANSLATE_CHARS = 2000;
+
+function googleTranslateUrl(
+  header: ReturnType<typeof pickText>,
+  description: ReturnType<typeof pickText>,
+  locale: string,
+): string {
+  const text = [header?.text, description?.text].filter(Boolean).join("\n\n").slice(0, MAX_TRANSLATE_CHARS);
+  const source = header?.language ?? description?.language ?? "auto";
+  const params = new URLSearchParams({ sl: source, tl: locale, text, op: "translate" });
+  return `https://translate.google.com/?${params.toString()}`;
 }

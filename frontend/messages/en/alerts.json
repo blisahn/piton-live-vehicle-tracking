@@ -46,5 +46,6 @@
     "lineWide": "Whole line",
     "none": "No alerts for this trip or its line.",
     "seeAll": "All alerts for this line"
-  }
+  },
+  "translate": "Translate with Google"
 }
