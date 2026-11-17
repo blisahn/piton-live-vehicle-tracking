@@ -1,6 +1,7 @@
 {
   "title": "Vehicle {key}",
   "close": "Close vehicle details",
+  "drawerLabel": "Vehicle details",
   "empty": "Vehicle not found",
   "emptyHint": "This vehicle has stopped reporting or the link is outdated.",
   "stale": "The connection is unstable, so these values may be out of date.",

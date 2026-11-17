@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { useLines } from "@/entities/transit";
 import { liveVehicleStore, useConnectionStore } from "@/entities/vehicle";
 import type { GeoPoint } from "@/shared/lib/geo";
+import { useIsDesktop } from "@/shared/lib/use-media-query";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
 import { headingArrow, ICON_PIXEL_RATIO, modePictogram, travelArrow } from "../model/map-icons";
 import { buildVehicleCollection, countMatches, type VehicleMode } from "../model/vehicle-geojson";
@@ -214,6 +215,17 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
     mapRef.current = map;
     map.addControl(new NavigationControl(), "top-right");
 
+    // MapLibre follows window resizes by itself, but not its container (the side panel can be dragged).
+    let resizeFrame: number | null = null;
+    const resizeObserver = new ResizeObserver(() => {
+      if (resizeFrame !== null) return;
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        map.resize();
+      });
+    });
+    resizeObserver.observe(container);
+
     let frame: number | null = null;
 
     function updateVehicles() {
@@ -407,6 +419,8 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
 
     return () => {
       unsubscribe();
+      resizeObserver.disconnect();
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
       if (frame !== null) cancelAnimationFrame(frame);
       scheduleUpdateRef.current = () => {};
       mapRef.current = null;
@@ -543,8 +557,16 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
 /** Which colour means which kind of vehicle. Collapsible, so it does not cover the map on a phone. */
 function ModeLegend() {
   const t = useTranslations("liveMap.legend");
+  // Closed on a phone, open from md up, until the user toggles it. The server render is closed, so no mismatch.
+  const isDesktop = useIsDesktop();
+  const [chosen, setChosen] = useState<boolean | null>(null);
+  const open = chosen ?? isDesktop;
   return (
-    <details className="absolute bottom-8 left-2 z-10 rounded-lg border bg-background/95 px-2 py-1 text-xs shadow-sm" open>
+    <details
+      open={open}
+      onToggle={(event) => setChosen(event.currentTarget.open)}
+      className="absolute bottom-8 left-2 z-10 rounded-lg border bg-background/95 px-2 py-1 text-xs shadow-sm"
+    >
       <summary className="cursor-pointer select-none font-medium">{t("title")}</summary>
       <ul className="mt-1 space-y-0.5">
         {(Object.keys(MODE_COLORS) as VehicleMode[]).map((mode) => (

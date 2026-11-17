@@ -13,30 +13,33 @@ export function AppHeader({ status }: { status?: ReactNode }) {
   const t = useTranslations("common");
   const pathname = usePathname();
   const links = [
-    { href: "/", label: t("nav.map") },
-    { href: "/alerts", label: t("nav.alerts") },
-    { href: "/status", label: t("nav.status") },
+    { href: "/", label: t("nav.map"), short: t("nav.mapShort") },
+    { href: "/alerts", label: t("nav.alerts"), short: t("nav.alerts") },
+    { href: "/status", label: t("nav.status"), short: t("nav.statusShort") },
   ] as const;
 
   return (
-    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-3 py-2">
-      <span className="text-sm font-semibold">{t("appName")}</span>
-      <nav className="flex gap-1" aria-label={t("appName")}>
+    <header className="flex items-center gap-1 border-b px-1.5 py-2 sm:gap-4 sm:px-3">
+      {/* Not enough room on a phone; the nav below is labelled with it instead. */}
+      <span className="hidden whitespace-nowrap text-sm font-semibold sm:inline">{t("appName")}</span>
+      <nav className="flex min-w-0 gap-0 sm:gap-1" aria-label={t("appName")}>
         {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}
             aria-current={pathname === link.href ? "page" : undefined}
             className={cn(
-              "rounded-md px-2 py-1 text-sm hover:bg-muted",
+              "whitespace-nowrap rounded-md px-1 py-1 text-xs hover:bg-muted sm:px-2 sm:text-sm",
               pathname === link.href ? "bg-muted font-medium" : "text-muted-foreground",
             )}
           >
-            {link.label}
+            {/* A phone fits only the short labels next to the status and language controls. */}
+            <span className="sm:hidden">{link.short}</span>
+            <span className="hidden sm:inline">{link.label}</span>
           </Link>
         ))}
       </nav>
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+      <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5 sm:gap-3">
         <TimeZoneNote />
         {status}
         <LanguageSwitch />
@@ -53,7 +56,8 @@ function TimeZoneNote() {
   return (
     <span title={t("description", { offset })} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
       <Clock className="size-3.5" aria-hidden />
-      {t("label", { offset })}
+      {/* Text from md up; on a phone the icon stays and the title/screen reader text carry the info. */}
+      <span className="sr-only md:not-sr-only">{t("label", { offset })}</span>
     </span>
   );
 }

@@ -41,8 +41,8 @@ export function VehicleFilter() {
   const shown = useMemo(() => countMatches(liveVehicleStore.all(), filter, lines), [version, filter, lines]);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-sm font-medium">
+    <div className="flex flex-col gap-1 md:gap-1.5">
+      <label htmlFor={inputId} className="sr-only text-sm font-medium md:not-sr-only">
         {t("label")}
       </label>
       <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export function VehicleFilter() {
           </Button>
         ) : null}
       </div>
-      <p className="text-xs text-muted-foreground" aria-live="polite">
+      <p className="text-[11px] text-muted-foreground md:text-xs" aria-live="polite">
         {t("count", { shown, total })}
       </p>
     </div>

@@ -1,6 +1,7 @@
 {
   "title": "Araç {key}",
   "close": "Araç ayrıntılarını kapat",
+  "drawerLabel": "Araç ayrıntıları",
   "empty": "Araç bulunamadı",
   "emptyHint": "Bu araç konum göndermeyi bıraktı veya bağlantı eski.",
   "stale": "Bağlantı kararsız olduğundan bu değerler güncel olmayabilir.",

@@ -3,7 +3,9 @@
   "nav": {
     "map": "Canlı harita",
     "alerts": "Uyarılar",
-    "status": "Sistem durumu"
+    "status": "Sistem durumu",
+    "mapShort": "Harita",
+    "statusShort": "Durum"
   },
   "language": {
     "label": "Dil",
