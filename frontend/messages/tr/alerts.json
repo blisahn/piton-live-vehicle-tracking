@@ -1,0 +1,52 @@
+{
+  "title": "Hizmet uyarıları",
+  "count": "{count, plural, =0 {Uyarı yok} other {# uyarı}}",
+  "loadError": "Uyarılar yüklenemedi.",
+  "refreshFailed": "Son yenileme başarısız oldu. Alınan son uyarılar gösteriliyor.",
+  "empty": {
+    "title": "Uyarı yok",
+    "hint": "Bu seçim için uyarı bulunmuyor."
+  },
+  "filters": {
+    "line": "Hat",
+    "lineSearch": "Hat ara",
+    "lineSearchPlaceholder": "Hat numarası veya adı",
+    "allLines": "Tüm hatlar",
+    "noLineMatches": "Eşleşen hat yok",
+    "stop": "Durak",
+    "allStops": "Tüm duraklar",
+    "showInactive": "Etkin olmayan uyarıları göster",
+    "clear": "Filtreleri temizle"
+  },
+  "new": "Yeni",
+  "inactive": "Etkin değil",
+  "noHeader": "(Başlık yok)",
+  "more": "Devamını göster",
+  "less": "Daha az göster",
+  "originalLanguage": {
+    "no": "Norveççe orijinal",
+    "en": "İngilizce orijinal",
+    "unknown": "Orijinal dil"
+  },
+  "period": {
+    "label": "Geçerlilik",
+    "range": "{start} – {end}",
+    "from": "{start} tarihinden itibaren",
+    "until": "{end} tarihine kadar",
+    "invalid": "Geçerlilik aralığı kaynak veride hatalı."
+  },
+  "link": "Daha fazla bilgi",
+  "lines": "Hatlar",
+  "stops": "Duraklar",
+  "moreStops": "+{count} daha",
+  "badge": "{count} uyarı",
+  "vehicle": {
+    "title": "Bu aracı ilgilendiren uyarılar",
+    "thisTrip": "Bu sefer",
+    "lineWide": "Hattın geneli",
+    "none": "Bu sefer veya hattı için uyarı yok.",
+    "seeAll": "Bu hattın tüm uyarıları"
+  },
+  "translate": "Google Translate'te çevir",
+  "opensInNewTab": "(yeni sekmede açılır)"
+}

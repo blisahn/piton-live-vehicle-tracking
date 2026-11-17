@@ -1,6 +1,7 @@
 {
   "title": "Vehicle {key}",
   "close": "Close vehicle details",
+  "drawerLabel": "Vehicle details",
   "empty": "Vehicle not found",
   "emptyHint": "This vehicle has stopped reporting or the link is outdated.",
   "stale": "The connection is unstable, so these values may be out of date.",
@@ -15,8 +16,15 @@
     "bearing": "Bearing",
     "lastUpdate": "Last update"
   },
-  "units": { "speed": "{value} km/h", "bearing": "{value}°" },
-  "status": { "0": "Approaching stop", "1": "At stop", "2": "On the way" },
+  "units": {
+    "speed": "{value} km/h",
+    "bearing": "{value}°"
+  },
+  "status": {
+    "0": "Approaching stop",
+    "1": "At stop",
+    "2": "On the way"
+  },
   "occupancy": {
     "0": "Empty",
     "1": "Many seats available",
@@ -27,5 +35,7 @@
     "6": "Not accepting passengers",
     "7": "No data available",
     "8": "Not boardable"
-  }
+  },
+  "showPanel": "Show detail panel",
+  "hidePanel": "Hide detail panel"
 }

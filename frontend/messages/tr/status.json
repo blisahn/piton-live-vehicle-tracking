@@ -64,6 +64,14 @@
     "browser": {
       "label": "Bu tarayıcının canlı bağlantısı",
       "hint": "Bu sayfanın WebSocket durumu"
+    },
+    "tripUpdatesRead": {
+      "label": "Sefer güncellemeleri: son okuma",
+      "none": "Sefer güncellemeleri henüz okunmadı"
+    },
+    "trackedTrips": {
+      "label": "Gerçek zamanlı verisi olan seferler",
+      "hint": "Şu an gerçek zamanlı tarifesi olan seferler"
     }
   }
 }

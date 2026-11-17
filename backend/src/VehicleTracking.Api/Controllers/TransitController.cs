@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using VehicleTracking.Api.Contracts;
 using VehicleTracking.Application.Common;
 using VehicleTracking.Application.Transit;
+using VehicleTracking.Application.TripUpdates;
 
 namespace VehicleTracking.Api.Controllers;
 
@@ -9,7 +10,7 @@ namespace VehicleTracking.Api.Controllers;
 [ApiController]
 [Route("api")]
 [Produces("application/json")]
-public sealed class TransitController(ReferenceDataService referenceData, TripRouteService tripRoutes) : ControllerBase
+public sealed class TransitController(ReferenceDataService referenceData, TripRouteService tripRoutes, TripProgressService tripProgress, TimeProvider time) : ControllerBase
 {
     /// <summary>Keeps one request, and the catalog request behind it, small.</summary>
     private const int MaxStopIds = 200;
@@ -46,5 +47,19 @@ public sealed class TransitController(ReferenceDataService referenceData, TripRo
             return Problem(statusCode: StatusCodes.Status404NotFound, title: "Trip not found", detail: $"No planned route is known for trip '{tripId}'.");
 
         return TripRouteDto.From(route);
+    }
+
+    /// <summary>Delays and expected times of a running trip, from the GTFS-Realtime Trip Updates feed.</summary>
+    /// <remarks>Stop names and times are filled in when the planned route can be looked up; the delays are returned regardless.</remarks>
+    [HttpGet("trips/{tripId}/progress")]
+    [ProducesResponseType(typeof(TripProgressDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TripProgressDto>> GetTripProgress(string tripId, CancellationToken cancellationToken)
+    {
+        var progress = await tripProgress.GetAsync(tripId, time.GetUtcNow(), cancellationToken);
+        if (progress is null)
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Trip not found", detail: $"Trip '{tripId}' is not in the trip updates feed.");
+
+        return TripProgressDto.From(progress);
     }
 }

@@ -31,7 +31,8 @@ test("a selected vehicle shows live details and its recent positions", async ({ 
   await expect(page.getByRole("heading", { name: vehicle.key })).toBeVisible();
 
   // Server-side paged history of the last 3 hours.
-  await page.getByLabel("Time range").selectOption("180");
+  await page.getByRole("combobox", { name: "Time range" }).click();
+  await page.getByRole("option", { name: "Last 3 hours" }).click();
   await expect(page.locator("table tbody tr").first()).toBeVisible();
 
   await page.getByRole("button", { name: "Show measured path" }).click();

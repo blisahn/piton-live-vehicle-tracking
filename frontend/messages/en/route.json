@@ -10,5 +10,15 @@
   "offRoute": "The vehicle is away from its planned route",
   "noTrip": "No trip information",
   "noTripHint": "This vehicle does not report which trip it is driving.",
-  "notFound": "No planned route is available for this trip"
+  "notFound": "No planned route is available for this trip",
+  "delay": {
+    "onTime": "On time",
+    "late": "{minutes} min late",
+    "early": "{minutes} min early",
+    "canceled": "Cancelled",
+    "noRealtime": "No realtime schedule",
+    "unavailable": "Schedule unavailable",
+    "skipped": "skipped",
+    "expectedAt": "expected"
+  }
 }

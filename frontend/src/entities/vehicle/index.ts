@@ -6,3 +6,4 @@ export { useLiveVehicle, useLiveVehicleCount } from "./model/use-live-vehicle";
 export { useSelectedVehicle } from "./model/use-selected-vehicle";
 export { LiveVehiclesProvider } from "./ui/live-vehicles-provider";
 export { ConnectionBadge } from "./ui/connection-badge";
+export { useAlertsVersion } from "./model/alerts-version-store";

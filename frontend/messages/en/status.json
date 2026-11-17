@@ -64,6 +64,14 @@
     "browser": {
       "label": "This browser's live connection",
       "hint": "WebSocket status of this page"
+    },
+    "tripUpdatesRead": {
+      "label": "Trip updates: last read",
+      "none": "Trip updates have not been read yet"
+    },
+    "trackedTrips": {
+      "label": "Trips with realtime data",
+      "hint": "Trips that currently have a realtime schedule"
     }
   }
 }

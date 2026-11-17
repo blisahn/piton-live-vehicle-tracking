@@ -2,7 +2,10 @@
   "appName": "Canlı Araç Takip",
   "nav": {
     "map": "Canlı harita",
-    "status": "Sistem durumu"
+    "alerts": "Uyarılar",
+    "status": "Sistem durumu",
+    "mapShort": "Harita",
+    "statusShort": "Durum"
   },
   "language": {
     "label": "Dil",

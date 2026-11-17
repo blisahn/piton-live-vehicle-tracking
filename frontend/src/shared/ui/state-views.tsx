@@ -3,15 +3,19 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // The three non-success states every screen has to handle. "Success" is the screen itself.
 
 export function LoadingState({ label }: { label?: string }) {
   const t = useTranslations("common.state");
   return (
-    <div role="status" aria-live="polite" className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-      <span className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+    <div role="status" aria-live="polite" className="flex flex-col gap-2 p-4 text-sm text-muted-foreground">
       {label ?? t("loading")}
+      <div aria-hidden className="flex flex-col gap-2">
+        <Skeleton className="h-3 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
     </div>
   );
 }

@@ -18,6 +18,9 @@ export const systemStatusSchema = z.object({
   pendingSpoolBatches: z.number(),
   connectedClients: z.number(),
   trackedVehicles: z.number(),
+  // Added later; optional so the screen still works against an older backend.
+  tripUpdatesLastSuccessfulReadAt: z.string().nullable().optional(),
+  trackedTrips: z.number().optional(),
 });
 
 export type SystemStatus = z.infer<typeof systemStatusSchema>;

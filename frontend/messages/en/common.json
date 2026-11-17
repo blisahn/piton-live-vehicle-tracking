@@ -2,7 +2,10 @@
   "appName": "Live Vehicle Tracking",
   "nav": {
     "map": "Live map",
-    "status": "System status"
+    "alerts": "Alerts",
+    "status": "System status",
+    "mapShort": "Map",
+    "statusShort": "Status"
   },
   "language": {
     "label": "Language",

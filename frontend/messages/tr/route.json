@@ -10,5 +10,15 @@
   "offRoute": "Araç planlanan güzergahından uzakta",
   "noTrip": "Sefer bilgisi yok",
   "noTripHint": "Bu araç hangi seferi yaptığını bildirmiyor.",
-  "notFound": "Bu sefer için planlanmış güzergah mevcut değil"
+  "notFound": "Bu sefer için planlanmış güzergah mevcut değil",
+  "delay": {
+    "onTime": "Zamanında",
+    "late": "{minutes} dk gecikmeli",
+    "early": "{minutes} dk erken",
+    "canceled": "İptal edildi",
+    "noRealtime": "Gerçek zamanlı tarife yok",
+    "unavailable": "Tarife kullanılamıyor",
+    "skipped": "atlanacak",
+    "expectedAt": "beklenen"
+  }
 }

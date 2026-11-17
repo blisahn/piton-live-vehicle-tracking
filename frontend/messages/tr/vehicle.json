@@ -1,6 +1,7 @@
 {
   "title": "Araç {key}",
   "close": "Araç ayrıntılarını kapat",
+  "drawerLabel": "Araç ayrıntıları",
   "empty": "Araç bulunamadı",
   "emptyHint": "Bu araç konum göndermeyi bıraktı veya bağlantı eski.",
   "stale": "Bağlantı kararsız olduğundan bu değerler güncel olmayabilir.",
@@ -15,8 +16,15 @@
     "bearing": "Yön",
     "lastUpdate": "Son güncelleme"
   },
-  "units": { "speed": "{value} km/sa", "bearing": "{value}°" },
-  "status": { "0": "Durağa yaklaşıyor", "1": "Durakta", "2": "Yolda" },
+  "units": {
+    "speed": "{value} km/sa",
+    "bearing": "{value}°"
+  },
+  "status": {
+    "0": "Durağa yaklaşıyor",
+    "1": "Durakta",
+    "2": "Yolda"
+  },
   "occupancy": {
     "0": "Boş",
     "1": "Çok sayıda boş koltuk",
@@ -27,5 +35,7 @@
     "6": "Yolcu almıyor",
     "7": "Veri yok",
     "8": "Binilemez"
-  }
+  },
+  "showPanel": "Detay panelini göster",
+  "hidePanel": "Detay panelini gizle"
 }

@@ -4,15 +4,15 @@ services:
   db:
     image: timescale/timescaledb:2.17.2-pg16
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-vehicle_tracking}
+      POSTGRES_USER: ${POSTGRES_USER:-vehicle_tracking}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vehicle_tracking}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vehicle_tracking} -d ${POSTGRES_DB:-vehicle_tracking}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -20,11 +20,15 @@ services:
   backend:
     build: ./backend
     environment:
-      ConnectionStrings__Database: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      Feed__VehiclePositionsUrl: ${FEED_VEHICLE_POSITIONS_URL}
-      Feed__PollInterval: ${FEED_POLL_INTERVAL}
-      Feed__ClientName: ${FEED_CLIENT_NAME}
-      Retention__Period: ${RETENTION_PERIOD}
+      ConnectionStrings__Database: Host=db;Port=5432;Database=${POSTGRES_DB:-vehicle_tracking};Username=${POSTGRES_USER:-vehicle_tracking};Password=${POSTGRES_PASSWORD:-vehicle_tracking}
+      Feed__VehiclePositionsUrl: ${FEED_VEHICLE_POSITIONS_URL:-https://api.entur.io/realtime/v1/gtfs-rt/vehicle-positions}
+      Feed__PollInterval: ${FEED_POLL_INTERVAL:-00:00:03}
+      Feed__ClientName: ${FEED_CLIENT_NAME:-vehicle-tracking-case-study}
+      Alerts__Url: ${ALERTS_URL:-https://api.entur.io/realtime/v1/gtfs-rt/alerts}
+      Alerts__PollInterval: ${ALERTS_POLL_INTERVAL:-00:00:30}
+      TripUpdates__Url: ${TRIP_UPDATES_URL:-https://api.entur.io/realtime/v1/gtfs-rt/trip-updates}
+      TripUpdates__PollInterval: ${TRIP_UPDATES_POLL_INTERVAL:-00:00:30}
+      Retention__Period: ${RETENTION_PERIOD:-03:00:00}
       Spool__Directory: /var/lib/vehicle-tracking/spool
       Cors__AllowedOrigins__0: http://localhost:${FRONTEND_PORT:-3000}
     ports:

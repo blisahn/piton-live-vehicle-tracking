@@ -13,6 +13,14 @@ builder.Services.AddOptions<FeedOptions>()
     .BindConfiguration(FeedOptions.SectionName)
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<AlertOptions>()
+    .BindConfiguration(AlertOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<TripUpdateOptions>()
+    .BindConfiguration(TripUpdateOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddOptions<RetentionOptions>()
     .BindConfiguration(RetentionOptions.SectionName)
     .ValidateDataAnnotations()
@@ -24,6 +32,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // One hub instance plays both roles: it receives live changes and it knows how many clients are connected.
 builder.Services.AddSingleton<VehicleSocketHub>();
 builder.Services.AddSingleton<ILivePublisher>(provider => provider.GetRequiredService<VehicleSocketHub>());
+builder.Services.AddSingleton<IAlertPublisher>(provider => provider.GetRequiredService<VehicleSocketHub>());
+builder.Services.AddSingleton(provider => new Lazy<IAlertVersionReader>(() => provider.GetRequiredService<IAlertVersionReader>()));
 builder.Services.AddSingleton<IConnectionCounter>(provider => provider.GetRequiredService<VehicleSocketHub>());
 
 // The browser app is served from another origin; only the configured origins may call the API or open a socket.

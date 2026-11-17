@@ -11,6 +11,9 @@ namespace VehicleTracking.Api.Realtime;
 //              A client that is at sequence S expects fromSeq == S + 1.
 //   heartbeat  sent when nothing else was sent for a while, so a client can tell a quiet
 //              connection from a dead one.
+//   alerts     the service alerts changed; `version` is the new alerts version. Carries no alerts:
+//              the client refetches GET /api/alerts. Sent on connect (current version) and after
+//              every change. It never touches vehicle sequence numbers.
 
 internal sealed record SnapshotMessage(long Seq, IReadOnlyList<VehicleDto> Vehicles)
 {
@@ -20,6 +23,11 @@ internal sealed record SnapshotMessage(long Seq, IReadOnlyList<VehicleDto> Vehic
 internal sealed record DeltaMessage(long FromSeq, long ToSeq, IReadOnlyList<VehicleDto> Upserted, IReadOnlyList<string> Removed)
 {
     public string Type => "delta";
+}
+
+internal sealed record AlertsMessage(long Version)
+{
+    public string Type => "alerts";
 }
 
 internal sealed record HeartbeatMessage(long Seq, DateTimeOffset ServerTime)

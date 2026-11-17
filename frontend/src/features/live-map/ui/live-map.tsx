@@ -15,9 +15,10 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { useLines } from "@/entities/transit";
 import { liveVehicleStore, useConnectionStore } from "@/entities/vehicle";
 import type { GeoPoint } from "@/shared/lib/geo";
+import { useIsDesktop } from "@/shared/lib/use-media-query";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
-import { headingArrow, ICON_PIXEL_RATIO, travelArrow } from "../model/map-icons";
-import { buildVehicleCollection, countMatches } from "../model/vehicle-geojson";
+import { headingArrow, ICON_PIXEL_RATIO, modePictogram, travelArrow } from "../model/map-icons";
+import { buildVehicleCollection, countMatches, type VehicleMode } from "../model/vehicle-geojson";
 
 /** A planned route, already split at the vehicle: the page hands it to the map, which only draws it. */
 export type RouteOverlay = {
@@ -45,6 +46,7 @@ const VEHICLES_SOURCE = "vehicles";
 const VEHICLES_LAYER = "vehicles";
 const HEADINGS_LAYER = "vehicle-headings";
 const SELECTED_HEADING_LAYER = "selected-vehicle-heading";
+const MODE_ICONS_LAYER = "vehicle-mode-icons";
 const TRACK_SOURCE = "track";
 const TRACK_LAYER = "track";
 const TRACK_ARROWS_LAYER = "track-arrows";
@@ -58,7 +60,20 @@ const ROUTE_STOPS_SOURCE = "route-stops";
 const ROUTE_STOPS_LAYER = "route-stops";
 const ROUTE_STOP_NAMES_LAYER = "route-stop-names";
 
-const VEHICLE_COLOR = "#0f766e";
+/**
+ * One colour per kind of vehicle. Red is kept for the selected vehicle, blue for the measured path
+ * and purple for the planned route, so none of these use them.
+ */
+export const MODE_COLORS: Record<VehicleMode, string> = {
+  bus: "#0d9488",
+  coach: "#65a30d",
+  rail: "#ea580c",
+  tram: "#ca8a04",
+  metro: "#db2777",
+  water: "#0284c7",
+  unknown: "#64748b",
+};
+const HEADING_COLOR = "#334155";
 const SELECTED_COLOR = "#dc2626";
 const TRACK_COLOR = "#2563eb";
 /** The planned route is purple, so it never looks like the measured path (blue). */
@@ -69,8 +84,15 @@ const ROUTE_DASHES = [2, 2];
 const APPROXIMATE_DASHES = [0.2, 2];
 /** Stop names are noise on a country-wide view, so they only show once zoomed in. */
 const STOP_NAMES_MIN_ZOOM = 13;
+/** Country view: small dots. Zoomed in: circles big enough to carry a pictogram of the vehicle type. */
 const VEHICLE_RADIUS = 4.5;
+const VEHICLE_RADIUS_ZOOMED = 8.5;
 const SELECTED_RADIUS = 9;
+const SELECTED_RADIUS_ZOOMED = 11;
+const ZOOM_SMALL = 11;
+const ZOOM_LARGE = 12;
+/** Pictograms appear once the circles have grown to hold them. */
+const MODE_ICONS_MIN_ZOOM = 11.8;
 /** Below this zoom thousands of arrows would only be noise; the selected vehicle keeps its arrow at any zoom. */
 const HEADINGS_MIN_ZOOM = 10;
 
@@ -101,12 +123,28 @@ function selectedHeadingFilter(selectedKey: string | null): ExpressionSpecificat
   return ["all", HAS_BEARING, ["==", ["get", "key"], selectedKey ?? ""]];
 }
 
-function selectedExpression<T extends number | string>(
-  selectedKey: string | null,
-  whenSelected: T,
-  otherwise: T,
-): ExpressionSpecification {
-  return ["case", ["==", ["get", "key"], selectedKey ?? ""], whenSelected, otherwise];
+function isSelected(selectedKey: string | null): ExpressionSpecification {
+  return ["==", ["get", "key"], selectedKey ?? ""];
+}
+
+/** Zoom must be the input of the outermost interpolate, so the selection check sits inside each stop. */
+function radiusExpression(selectedKey: string | null): ExpressionSpecification {
+  const selected = isSelected(selectedKey);
+  return [
+    "interpolate", ["linear"], ["zoom"],
+    ZOOM_SMALL, ["case", selected, SELECTED_RADIUS, VEHICLE_RADIUS],
+    ZOOM_LARGE, ["case", selected, SELECTED_RADIUS_ZOOMED, VEHICLE_RADIUS_ZOOMED],
+  ];
+}
+
+const MODE_COLOR_EXPRESSION: ExpressionSpecification = [
+  "match", ["get", "mode"],
+  ...Object.entries(MODE_COLORS).flatMap(([mode, color]) => [mode, color]),
+  MODE_COLORS.unknown,
+] as unknown as ExpressionSpecification;
+
+function colorExpression(selectedKey: string | null): ExpressionSpecification {
+  return ["case", isSelected(selectedKey), SELECTED_COLOR, MODE_COLOR_EXPRESSION];
 }
 
 type MapStatus = "loading" | "ready" | "error";
@@ -168,6 +206,9 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
         style: OSM_STYLE,
         center: [10.75, 59.91],
         zoom: 9,
+        // Our own observer below resizes and redraws in the same frame; MapLibre's built-in one
+        // resizes a frame early and would bring the blank frame back.
+        trackResize: false,
       });
     } catch {
       // WebGL unavailable: the constructor throws. Report it after the effect has finished.
@@ -176,6 +217,20 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
     }
     mapRef.current = map;
     map.addControl(new NavigationControl(), "top-right");
+
+    // The container changes size while the side panel slides or is dragged. Resizing a canvas
+    // clears it, so resizing in one frame and drawing in the next shows a blank (white) frame.
+    // A ResizeObserver callback runs after layout but before paint: resizing and redrawing
+    // synchronously there means the browser never paints the cleared canvas.
+    // isStyleLoaded() is false while tiles are still loading, which is exactly when a resize
+    // reveals new ones, so readiness is tracked with the load event instead.
+    let loaded = false;
+    map.once("load", () => (loaded = true));
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+      if (loaded) map.redraw();
+    });
+    resizeObserver.observe(container);
 
     let frame: number | null = null;
 
@@ -196,8 +251,12 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
     scheduleUpdateRef.current = scheduleUpdate;
 
     map.on("load", () => {
-      map.addImage("heading", headingArrow(VEHICLE_RADIUS + 1, 7.5, VEHICLE_COLOR), { pixelRatio: ICON_PIXEL_RATIO });
-      map.addImage("heading-selected", headingArrow(SELECTED_RADIUS + 2, 12, SELECTED_COLOR), {
+      // The gap fits the zoomed-in circle, the size it has wherever arrows are shown.
+      map.addImage("heading", headingArrow(VEHICLE_RADIUS_ZOOMED + 1, 7.5, HEADING_COLOR), { pixelRatio: ICON_PIXEL_RATIO });
+      for (const mode of ["bus", "coach", "rail", "tram", "metro", "water"] as const) {
+        map.addImage(`mode-${mode}`, modePictogram(mode), { pixelRatio: ICON_PIXEL_RATIO });
+      }
+      map.addImage("heading-selected", headingArrow(SELECTED_RADIUS_ZOOMED + 2, 12, SELECTED_COLOR), {
         pixelRatio: ICON_PIXEL_RATIO,
       });
       map.addImage("travel-arrow", travelArrow(TRACK_COLOR), { pixelRatio: ICON_PIXEL_RATIO });
@@ -311,10 +370,23 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
         type: "circle",
         source: VEHICLES_SOURCE,
         paint: {
-          "circle-radius": selectedExpression(selectedKeyRef.current, SELECTED_RADIUS, VEHICLE_RADIUS),
-          "circle-color": selectedExpression(selectedKeyRef.current, SELECTED_COLOR, VEHICLE_COLOR),
+          "circle-radius": radiusExpression(selectedKeyRef.current),
+          "circle-color": colorExpression(selectedKeyRef.current),
           "circle-stroke-width": 1.5,
           "circle-stroke-color": "#ffffff",
+        },
+      });
+      // The circle carries the colour and stays the click target; this only adds the white pictogram.
+      map.addLayer({
+        id: MODE_ICONS_LAYER,
+        type: "symbol",
+        source: VEHICLES_SOURCE,
+        minzoom: MODE_ICONS_MIN_ZOOM,
+        filter: ["!=", ["get", "mode"], "unknown"],
+        layout: {
+          "icon-image": ["concat", "mode-", ["get", "mode"]],
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         },
       });
       map.addLayer({
@@ -353,6 +425,7 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
 
     return () => {
       unsubscribe();
+      resizeObserver.disconnect();
       if (frame !== null) cancelAnimationFrame(frame);
       scheduleUpdateRef.current = () => {};
       mapRef.current = null;
@@ -369,8 +442,8 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
   useEffect(() => {
     const map = mapRef.current;
     if (status !== "ready" || !map) return;
-    map.setPaintProperty(VEHICLES_LAYER, "circle-radius", selectedExpression(selectedKey, SELECTED_RADIUS, VEHICLE_RADIUS));
-    map.setPaintProperty(VEHICLES_LAYER, "circle-color", selectedExpression(selectedKey, SELECTED_COLOR, VEHICLE_COLOR));
+    map.setPaintProperty(VEHICLES_LAYER, "circle-radius", radiusExpression(selectedKey));
+    map.setPaintProperty(VEHICLES_LAYER, "circle-color", colorExpression(selectedKey));
     map.setFilter(SELECTED_HEADING_LAYER, selectedHeadingFilter(selectedKey));
 
     const vehicle = selectedKey ? liveVehicleStore.get(selectedKey) : undefined;
@@ -481,6 +554,33 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
           {overlay}
         </div>
       ) : null}
+      {status === "ready" ? <ModeLegend /> : null}
     </div>
+  );
+}
+
+/** Which colour means which kind of vehicle. Collapsible, so it does not cover the map on a phone. */
+function ModeLegend() {
+  const t = useTranslations("liveMap.legend");
+  // Closed on a phone, open from md up, until the user toggles it. The server render is closed, so no mismatch.
+  const isDesktop = useIsDesktop();
+  const [chosen, setChosen] = useState<boolean | null>(null);
+  const open = chosen ?? isDesktop;
+  return (
+    <details
+      open={open}
+      onToggle={(event) => setChosen(event.currentTarget.open)}
+      className="absolute bottom-8 left-2 z-10 rounded-lg border bg-background/95 px-2 py-1 text-xs shadow-sm"
+    >
+      <summary className="cursor-pointer select-none font-medium">{t("title")}</summary>
+      <ul className="mt-1 space-y-0.5">
+        {(Object.keys(MODE_COLORS) as VehicleMode[]).map((mode) => (
+          <li key={mode} className="flex items-center gap-1.5">
+            <span aria-hidden className="inline-block size-2.5 rounded-full" style={{ backgroundColor: MODE_COLORS[mode] }} />
+            {t(mode)}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

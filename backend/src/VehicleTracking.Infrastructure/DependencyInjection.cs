@@ -20,6 +20,9 @@ public static class DependencyInjection
     /// <summary>A read that takes longer than this is abandoned; the next poll is the retry.</summary>
     private static readonly TimeSpan FeedTimeout = TimeSpan.FromSeconds(10);
 
+    /// <summary>The trip updates response is about 12 MB, so it gets far longer than the other feeds.</summary>
+    private static readonly TimeSpan TripUpdateTimeout = TimeSpan.FromSeconds(30);
+
     private static readonly TimeSpan JourneyPlannerTimeout = TimeSpan.FromSeconds(10);
 
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
@@ -33,6 +36,20 @@ public static class DependencyInjection
         {
             var feed = provider.GetRequiredService<IOptions<FeedOptions>>().Value;
             http.Timeout = FeedTimeout;
+            http.DefaultRequestHeaders.Add("ET-Client-Name", feed.ClientName);
+        });
+
+        services.AddHttpClient<IAlertFeedSource, EnturAlertFeedSource>((provider, http) =>
+        {
+            var feed = provider.GetRequiredService<IOptions<FeedOptions>>().Value;
+            http.Timeout = FeedTimeout;
+            http.DefaultRequestHeaders.Add("ET-Client-Name", feed.ClientName);
+        });
+
+        services.AddHttpClient<ITripUpdateFeedSource, EnturTripUpdateFeedSource>((provider, http) =>
+        {
+            var feed = provider.GetRequiredService<IOptions<FeedOptions>>().Value;
+            http.Timeout = TripUpdateTimeout;
             http.DefaultRequestHeaders.Add("ET-Client-Name", feed.ClientName);
         });
 
@@ -67,6 +84,8 @@ public static class DependencyInjection
 
         services.AddHostedService<DatabaseInitializer>();
         services.AddHostedService<FeedPollingWorker>();
+        services.AddHostedService<AlertPollingWorker>();
+        services.AddHostedService<TripUpdatePollingWorker>();
         services.AddHostedService<PositionWriterWorker>();
         services.AddHostedService<RetentionWorker>();
         services.AddHostedService<ReferenceDataWorker>();

@@ -7,8 +7,13 @@ namespace VehicleTracking.Api.Realtime;
 /// Knows every connected client and hands each live change to all of them.
 /// Publishing only writes into each client's outbox in memory; it never waits for a socket,
 /// so a slow client cannot delay the others or the polling loop that calls it.
+///
+/// It also announces alert version changes. The version reader is a Lazy because AlertService
+/// is built with all IAlertPublishers (this hub among them); asking for the service only when
+/// the first client connects, long after startup, keeps the dependency graph free of a cycle.
 /// </summary>
-internal sealed class VehicleSocketHub(ILiveState liveState) : ILivePublisher, IConnectionCounter
+internal sealed class VehicleSocketHub(ILiveState liveState, Lazy<IAlertVersionReader> alertVersion)
+    : ILivePublisher, IAlertPublisher, IConnectionCounter
 {
     private readonly object _gate = new();
     private readonly HashSet<ClientOutbox> _outboxes = new();
@@ -27,6 +32,7 @@ internal sealed class VehicleSocketHub(ILiveState liveState) : ILivePublisher, I
         lock (_gate)
         {
             outbox.QueueSnapshot(liveState.GetSnapshot());
+            outbox.QueueAlertsVersion(alertVersion.Value.Version);
             _outboxes.Add(outbox);
             _connectedClients = _outboxes.Count;
         }
@@ -48,6 +54,15 @@ internal sealed class VehicleSocketHub(ILiveState liveState) : ILivePublisher, I
         {
             foreach (var outbox in _outboxes)
                 outbox.QueueChange(change);
+        }
+    }
+
+    public void PublishAlertsVersion(long version)
+    {
+        lock (_gate)
+        {
+            foreach (var outbox in _outboxes)
+                outbox.QueueAlertsVersion(version);
         }
     }
 }
