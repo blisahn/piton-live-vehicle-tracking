@@ -142,6 +142,24 @@ function StatusGrid({ status }: { status: SystemStatus }) {
           </>
         }
       />
+      {status.tripUpdatesLastSuccessfulReadAt !== undefined ? (
+        <StatCard
+          label={t("cards.tripUpdatesRead.label")}
+          value={
+            status.tripUpdatesLastSuccessfulReadAt === null
+              ? dash
+              : format.dateTime(new Date(status.tripUpdatesLastSuccessfulReadAt), { timeStyle: "medium" })
+          }
+          hint={status.tripUpdatesLastSuccessfulReadAt === null ? t("cards.tripUpdatesRead.none") : undefined}
+        />
+      ) : null}
+      {status.trackedTrips !== undefined ? (
+        <StatCard
+          label={t("cards.trackedTrips.label")}
+          value={format.number(status.trackedTrips)}
+          hint={t("cards.trackedTrips.hint")}
+        />
+      ) : null}
       <StatCard
         label={t("cards.successfulReads.label")}
         value={format.number(status.successfulReads)}
