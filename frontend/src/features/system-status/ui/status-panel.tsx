@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ApiError } from "@/shared/api/http";
 import { EmptyState, ErrorState, ForbiddenState, LoadingState } from "@/shared/ui/state-views";
 import { useSystemStatus, type SystemStatus } from "../api/status";
+import { dataSize } from "../model/data-size";
 import { deriveHealth, type HealthLevel } from "../model/health";
 
 // Each level has a symbol and text as well as a colour, so colour is never the only signal.
@@ -84,6 +85,10 @@ function StatusGrid({ status }: { status: SystemStatus }) {
   const t = useTranslations("status");
   const tConnection = useTranslations("connection");
   const format = useFormatter();
+  const formatDataSize = (bytes: number) => {
+    const { value, unit } = dataSize(bytes);
+    return format.number(value, { style: "unit", unit, unitDisplay: "short", maximumFractionDigits: unit === "byte" ? 0 : 1 });
+  };
   const connection = useConnectionStore((s) => s.status);
   const dash = t("noValue");
 
@@ -160,6 +165,13 @@ function StatusGrid({ status }: { status: SystemStatus }) {
           label={t("cards.trackedTrips.label")}
           value={format.number(status.trackedTrips)}
           hint={t("cards.trackedTrips.hint")}
+        />
+      ) : null}
+      {status.webSocketBytesLastMinute !== undefined ? (
+        <StatCard
+          label={t("cards.webSocketTraffic.label")}
+          value={formatDataSize(status.webSocketBytesLastMinute)}
+          hint={t("cards.webSocketTraffic.hint", { clients: status.connectedClients })}
         />
       ) : null}
       <StatCard

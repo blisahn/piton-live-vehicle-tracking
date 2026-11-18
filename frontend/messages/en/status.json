@@ -72,6 +72,10 @@
     "trackedTrips": {
       "label": "Trips with realtime data",
       "hint": "Trips that currently have a realtime schedule"
+    },
+    "webSocketTraffic": {
+      "label": "WebSocket traffic (last minute)",
+      "hint": "{clients, plural, =0 {No clients connected} one {Sent to # client} other {Sent to # clients in total}}"
     }
   }
 }
