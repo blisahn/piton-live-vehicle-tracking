@@ -81,6 +81,13 @@ builder.Services.AddAppHealthChecks();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+
+// Swagger serves the API description and its UI from middleware, not endpoints, so it has to run
+// before authorization: the fallback policy would otherwise answer 401 and the "Authorize" button
+// could never be reached. The endpoints themselves stay protected.
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -90,9 +97,6 @@ var webSockets = new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds
 foreach (var origin in allowedOrigins)
     webSockets.AllowedOrigins.Add(origin);
 app.UseWebSockets(webSockets);
-
-app.UseSwagger();
-app.UseSwaggerUI();
 
 app.MapControllers();
 app.MapVehicleSocket();
