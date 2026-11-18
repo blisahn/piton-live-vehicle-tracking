@@ -1,5 +1,5 @@
 import { expect, test as anonymous } from "@playwright/test";
-import { test } from "./fixtures";
+import { API_URL, test } from "./fixtures";
 
 // A fresh context: no cookie, nobody signed in.
 // (uses plain Playwright test, not the signed-in fixture)
@@ -37,6 +37,12 @@ anonymous.describe("anonymous visitor", () => {
     await page.getByRole("button", { name: "Log in" }).click();
     // Next.js adds its own role="alert" route announcer, so look for our message by its text.
     await expect(page.getByRole("alert").filter({ hasText: "The e-mail or password is wrong." })).toBeVisible();
+  });
+
+  anonymous("can open Swagger, while the endpoints it describes stay protected", async ({ request }) => {
+    expect((await request.get(`${API_URL}/swagger/index.html`)).status()).toBe(200);
+    expect((await request.get(`${API_URL}/swagger/v1/swagger.json`)).status()).toBe(200);
+    expect((await request.get(`${API_URL}/api/vehicles`)).status()).toBe(401);
   });
 });
 
