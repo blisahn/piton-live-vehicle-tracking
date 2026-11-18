@@ -3,6 +3,9 @@ name: vehicle-tracking
 services:
   db:
     image: timescale/timescaledb:2.17.2-pg16
+    # Like the other services: after a host reboot the database comes back on its own;
+    # until then the backend keeps collecting into its spool.
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-vehicle_tracking}
       POSTGRES_USER: ${POSTGRES_USER:-vehicle_tracking}

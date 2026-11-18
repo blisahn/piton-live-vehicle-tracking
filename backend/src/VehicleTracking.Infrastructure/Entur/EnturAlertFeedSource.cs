@@ -14,15 +14,20 @@ internal sealed class EnturAlertFeedSource(HttpClient http, IOptions<AlertOption
 {
     public async Task<AlertFeedSnapshot> ReadAsync(CancellationToken cancellationToken)
     {
+        // HttpClient.Timeout stops at the response headers when the body is read separately. A connection
+        // that dies mid-body (network drop, laptop sleep) would then hang the poll loop forever, silently.
+        // This deadline covers the whole exchange, body included.
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(http.Timeout);
         try
         {
             using var response = await http.GetAsync(
-                options.Value.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                options.Value.Url, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
 
             if (!response.IsSuccessStatusCode)
                 throw new FeedReadException($"The alerts feed answered with HTTP {(int)response.StatusCode}.");
 
-            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            var bytes = await response.Content.ReadAsByteArrayAsync(deadline.Token);
             var feed = TransitRealtime.FeedMessage.Parser.ParseFrom(bytes);
 
             return Map(feed);
@@ -35,7 +40,7 @@ internal sealed class EnturAlertFeedSource(HttpClient http, IOptions<AlertOption
         {
             throw new FeedReadException($"The alerts feed content could not be parsed: {ex.Message}", ex);
         }
-        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
             throw new FeedReadException("The alerts feed request timed out.", ex);
         }

@@ -10,7 +10,8 @@
     "label": "Hat, güzergah veya araç numarası",
     "placeholder": "örn. M1, bir hat adı veya 2667",
     "clear": "Filtreyi temizle",
-    "count": "{total, number} araçtan {shown, number} tanesi"
+    "count": "{total, number} araçtan {shown, number} tanesi",
+    "countInArea": "Bu alanda {total, number} araç"
   },
   "noConnection": "Sunucuya ulaşılamıyor. Otomatik olarak yeniden deneniyor…",
   "legend": {

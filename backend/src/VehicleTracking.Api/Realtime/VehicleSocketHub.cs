@@ -39,6 +39,18 @@ internal sealed class VehicleSocketHub(ILiveState liveState, Lazy<IAlertVersionR
         return outbox;
     }
 
+    /// <summary>
+    /// Queues a fresh snapshot for one client whose subscription changed. Same lock and same
+    /// ordering guarantee as <see cref="Register"/>: no change can fall between snapshot and later deltas.
+    /// </summary>
+    public void Resnapshot(ClientOutbox outbox)
+    {
+        lock (_gate)
+        {
+            outbox.QueueSnapshot(liveState.GetSnapshot());
+        }
+    }
+
     public void Unregister(ClientOutbox outbox)
     {
         lock (_gate)

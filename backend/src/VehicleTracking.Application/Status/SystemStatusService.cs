@@ -9,6 +9,7 @@ public sealed class SystemStatusService(
     IIngestionMetrics metrics,
     IIngestStatsReader stats,
     IConnectionCounter connections,
+    IWebSocketTraffic traffic,
     IPositionSpool spool,
     ILiveState liveState,
     AlertService alerts,
@@ -38,7 +39,8 @@ public sealed class SystemStatusService(
             alerts.Query(null, null, includeInactive: false, now).Count,
             alerts.Status.LastSuccessfulReadAt,
             tripUpdates.Status.LastSuccessfulReadAt,
-            tripUpdates.Status.TripCount);
+            tripUpdates.Status.TripCount,
+            traffic.BytesSentLastMinute);
     }
 }
 
@@ -61,4 +63,5 @@ public sealed record SystemStatus(
     int ActiveAlerts,
     DateTimeOffset? AlertsLastSuccessfulReadAt,
     DateTimeOffset? TripUpdatesLastSuccessfulReadAt,
-    int TrackedTrips);
+    int TrackedTrips,
+    long WebSocketBytesLastMinute);

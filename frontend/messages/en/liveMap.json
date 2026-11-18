@@ -10,7 +10,8 @@
     "label": "Line, route or vehicle number",
     "placeholder": "e.g. M1, a line name or 2667",
     "clear": "Clear filter",
-    "count": "{shown, number} of {total, number} {total, plural, one {vehicle} other {vehicles}}"
+    "count": "{shown, number} of {total, number} {total, plural, one {vehicle} other {vehicles}}",
+    "countInArea": "{total, number} {total, plural, one {vehicle} other {vehicles}} in this area"
   },
   "noConnection": "The server cannot be reached. Trying again automatically…",
   "legend": {

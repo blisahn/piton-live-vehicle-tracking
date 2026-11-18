@@ -13,11 +13,12 @@ import {
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLines } from "@/entities/transit";
-import { liveVehicleStore, useConnectionStore } from "@/entities/vehicle";
+import { liveVehicleStore, useConnectionStore, useSubscriptionStore } from "@/entities/vehicle";
 import type { GeoPoint } from "@/shared/lib/geo";
 import { useIsDesktop } from "@/shared/lib/use-media-query";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
 import { headingArrow, ICON_PIXEL_RATIO, modePictogram, travelArrow } from "../model/map-icons";
+import { contains, paddedBounds, shouldSubscribe, VIEWPORT_PADDING, type Bounds } from "../model/viewport";
 import { buildVehicleCollection, countMatches, type VehicleMode } from "../model/vehicle-geojson";
 
 /** A planned route, already split at the vehicle: the page hands it to the map, which only draws it. */
@@ -421,6 +422,21 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
       if (!("sourceId" in event) || !event.sourceId) setStatus((s) => (s === "ready" ? s : "error"));
     });
 
+    // Subscribe to what the map shows (plus padding). Small pans stay inside the padded area and send nothing.
+    function syncViewport() {
+      const { bbox, setViewport } = useSubscriptionStore.getState();
+      if (!shouldSubscribe(map.getZoom())) {
+        if (bbox !== null) setViewport(null);
+        return;
+      }
+      const view = map.getBounds();
+      const visible: Bounds = [view.getWest(), view.getSouth(), view.getEast(), view.getNorth()];
+      if (bbox && contains(bbox, visible)) return;
+      setViewport(paddedBounds(visible, VIEWPORT_PADDING));
+    }
+    map.on("moveend", syncViewport);
+    map.once("load", syncViewport);
+
     const unsubscribe = liveVehicleStore.subscribe(scheduleUpdate);
 
     return () => {
@@ -428,6 +444,8 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
       resizeObserver.disconnect();
       if (frame !== null) cancelAnimationFrame(frame);
       scheduleUpdateRef.current = () => {};
+      // The map is gone, so its area no longer says what is visible.
+      useSubscriptionStore.getState().setViewport(null);
       mapRef.current = null;
       map.remove();
     };

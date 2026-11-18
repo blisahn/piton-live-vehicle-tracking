@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useLines } from "@/entities/transit";
-import { liveVehicleStore } from "@/entities/vehicle";
+import { liveVehicleStore, useIsAreaSubscription } from "@/entities/vehicle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVehicleFilter } from "../model/use-vehicle-filter";
@@ -16,6 +16,7 @@ export function VehicleFilter() {
   const inputId = useId();
   const [filter, setFilter] = useVehicleFilter();
   const lines = useLines();
+  const inArea = useIsAreaSubscription();
 
   // What the user is typing; the URL only follows after a short pause.
   const [value, setValue] = useState(filter);
@@ -69,7 +70,7 @@ export function VehicleFilter() {
         ) : null}
       </div>
       <p className="text-[11px] text-muted-foreground md:text-xs" aria-live="polite">
-        {t("count", { shown, total })}
+        {inArea ? t("countInArea", { total }) : t("count", { shown, total })}
       </p>
     </div>
   );

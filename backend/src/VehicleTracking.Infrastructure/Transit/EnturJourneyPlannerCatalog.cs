@@ -127,14 +127,19 @@ internal sealed class EnturJourneyPlannerCatalog(HttpClient http, IOptions<Journ
     /// <summary>Sends one GraphQL request and returns its "data" part.</summary>
     private async Task<JsonElement> PostAsync(string query, object variables, CancellationToken cancellationToken)
     {
+        // HttpClient.Timeout stops at the response headers when the body is read separately. A connection
+        // that dies mid-body (network drop, laptop sleep) would then hang the poll loop forever, silently.
+        // This deadline covers the whole exchange, body included.
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(http.Timeout);
         try
         {
-            using var response = await http.PostAsJsonAsync(options.Value.Url, new { query, variables }, cancellationToken);
+            using var response = await http.PostAsJsonAsync(options.Value.Url, new { query, variables }, deadline.Token);
             if (!response.IsSuccessStatusCode)
                 throw new TransitCatalogException($"The journey planner answered with HTTP {(int)response.StatusCode}.");
 
             using var document = await JsonDocument.ParseAsync(
-                await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+                await response.Content.ReadAsStreamAsync(deadline.Token), cancellationToken: deadline.Token);
 
             // GraphQL reports problems inside a 200 response.
             if (document.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() > 0)
@@ -150,9 +155,9 @@ internal sealed class EnturJourneyPlannerCatalog(HttpClient http, IOptions<Journ
         {
             throw new TransitCatalogException($"The journey planner could not be reached: {ex.Message}", ex);
         }
-        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
-            // Our own token is not cancelled, so this is the HttpClient timeout.
+            // Our own token is not cancelled, so this is the deadline (or HttpClient timeout).
             throw new TransitCatalogException("The journey planner request timed out.", ex);
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
