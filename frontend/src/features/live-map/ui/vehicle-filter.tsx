@@ -3,11 +3,12 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useLines } from "@/entities/transit";
-import { liveVehicleStore, useIsAreaSubscription } from "@/entities/vehicle";
+import { liveVehicleStore } from "@/entities/vehicle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVehicleFilter } from "../model/use-vehicle-filter";
-import { countMatches } from "../model/vehicle-geojson";
+import { useScreenBoundsStore } from "../model/screen-bounds-store";
+import { countVehicles } from "../model/vehicle-geojson";
 
 const DEBOUNCE_MS = 250;
 
@@ -16,7 +17,7 @@ export function VehicleFilter() {
   const inputId = useId();
   const [filter, setFilter] = useVehicleFilter();
   const lines = useLines();
-  const inArea = useIsAreaSubscription();
+  const screen = useScreenBoundsStore((state) => state.bounds);
 
   // What the user is typing; the URL only follows after a short pause.
   const [value, setValue] = useState(filter);
@@ -38,8 +39,17 @@ export function VehicleFilter() {
   const version = useSyncExternalStore(liveVehicleStore.subscribe, liveVehicleStore.getVersion, () => 0);
   const total = liveVehicleStore.getCount();
   // `version` is not read inside, but it is what tells us the store content changed.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const shown = useMemo(() => countMatches(liveVehicleStore.all(), filter, lines), [version, filter, lines]);
+  const { matching, onScreen } = useMemo(
+    () => countVehicles(liveVehicleStore.all(), filter, lines, screen),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [version, filter, lines, screen],
+  );
+
+  // Before the map reports what it shows, fall back to the plain total.
+  let countText: string;
+  if (!screen) countText = t("count", { shown: matching, total });
+  else if (filter.trim() === "") countText = t("countOnScreen", { onScreen });
+  else countText = t("countFiltered", { matching, onScreen });
 
   return (
     <div className="flex flex-col gap-1 md:gap-1.5">
@@ -70,7 +80,7 @@ export function VehicleFilter() {
         ) : null}
       </div>
       <p className="text-[11px] text-muted-foreground md:text-xs" aria-live="polite">
-        {inArea ? t("countInArea", { total }) : t("count", { shown, total })}
+        {countText}
       </p>
     </div>
   );

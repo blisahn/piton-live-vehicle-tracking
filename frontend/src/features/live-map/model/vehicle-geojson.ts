@@ -1,3 +1,4 @@
+import { isInside, type Bounds } from "./viewport";
 import type { Vehicle } from "@/entities/vehicle";
 import { lineMatches, type Line } from "@/entities/transit";
 
@@ -20,11 +21,27 @@ export function countMatches(
   filter: string,
   lines: ReadonlyMap<string, Line>,
 ): number {
-  let count = 0;
+  return countVehicles(vehicles, filter, lines, null).matching;
+}
+
+/**
+ * How many vehicles match the filter, and how many of those are inside `screen`.
+ * One pass of a few comparisons per vehicle: a few thousand vehicles take a fraction of a millisecond.
+ */
+export function countVehicles(
+  vehicles: ReadonlyMap<string, Vehicle>,
+  filter: string,
+  lines: ReadonlyMap<string, Line>,
+  screen: Bounds | null,
+): { matching: number; onScreen: number } {
+  let matching = 0;
+  let onScreen = 0;
   for (const vehicle of vehicles.values()) {
-    if (matchesFilter(vehicle, filter, vehicle.routeId ? lines.get(vehicle.routeId) : undefined)) count++;
+    if (!matchesFilter(vehicle, filter, vehicle.routeId ? lines.get(vehicle.routeId) : undefined)) continue;
+    matching++;
+    if (screen && isInside(screen, vehicle.lon, vehicle.lat)) onScreen++;
   }
-  return count;
+  return { matching, onScreen };
 }
 
 /** The kinds of vehicle the map tells apart. The feed itself has no type; it comes from the vehicle's line. */

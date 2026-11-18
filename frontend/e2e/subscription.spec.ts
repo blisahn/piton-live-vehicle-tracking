@@ -3,10 +3,10 @@ import { adminHeaders, expect, test } from "./fixtures";
 
 const API_URL = process.env.E2E_API_URL ?? "http://localhost:8080";
 
-const zoomIn = (page: Page) => page.getByRole("button", { name: "Zoom in" });
 const zoomOut = (page: Page) => page.getByRole("button", { name: "Zoom out" });
-const countryCount = (page: Page) => page.getByText(/^[1-9][\d,.]* of [1-9][\d,.]* vehicles?$/);
-const areaCount = (page: Page) => page.getByText(/^[1-9][\d,.]* vehicles? in this area$/);
+const onScreenCount = (page: Page) => page.getByText(/^[\d,.]+ vehicles? on screen$/);
+const filteredCount = (page: Page) => page.getByText(/^[1-9][\d,.]* matching vehicles?, [\d,.]+ on screen$/);
+const numberIn = async (page: Page) => Number((await onScreenCount(page).innerText()).split(" ")[0].replace(/[,.]/g, ""));
 
 /** A public code of a line that has a vehicle on the road right now. */
 async function pickLineCode(page: Page): Promise<string> {
@@ -22,29 +22,24 @@ async function pickLineCode(page: Page): Promise<string> {
   return line!.publicCode!;
 }
 
-test("zoomed in the counter is about the visible area, zoomed out it is about the country", async ({ page }) => {
+test("the counter is about what is on screen and grows when zooming out", async ({ page }) => {
   await page.goto("/en");
+  await expect(onScreenCount(page)).toBeVisible();
+  await expect.poll(() => numberIn(page)).toBeGreaterThan(0);
+  const zoomedIn = await numberIn(page);
 
-  // The map opens on Oslo at zoom 9: an area subscription.
-  await expect(areaCount(page)).toBeVisible();
-
-  // Two steps out is below the area threshold: the whole country again.
+  // A wider view shows at least as many vehicles (two steps out also drops the area subscription).
   await zoomOut(page).click();
   await zoomOut(page).click();
-  await expect(countryCount(page)).toBeVisible();
-
-  await zoomIn(page).click();
-  await zoomIn(page).click();
-  await zoomIn(page).click();
-  await expect(areaCount(page)).toBeVisible();
+  await expect.poll(() => numberIn(page)).toBeGreaterThanOrEqual(zoomedIn);
 });
 
 test("a line filter finds vehicles outside the visible area", async ({ page }) => {
   const code = await pickLineCode(page);
   await page.goto("/en");
-  await expect(areaCount(page)).toBeVisible();
+  await expect(onScreenCount(page)).toBeVisible();
 
   await page.getByLabel("Route or vehicle number").fill(code);
-  // Subscribed by line now, so the area no longer limits the count.
-  await expect(countryCount(page)).toBeVisible();
+  // Subscribed by line now: matching vehicles arrive from anywhere, not only from the visible area.
+  await expect(filteredCount(page)).toBeVisible();
 });

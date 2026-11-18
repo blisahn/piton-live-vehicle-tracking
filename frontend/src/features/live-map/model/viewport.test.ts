@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contains, MIN_AREA_ZOOM, paddedBounds, shouldSubscribe, type Bounds } from "./viewport";
+import { contains, isInside, MIN_AREA_ZOOM, paddedBounds, shouldSubscribe, type Bounds } from "./viewport";
 
 describe("paddedBounds", () => {
   it("grows each side by the factor times the width and height", () => {
@@ -40,5 +40,15 @@ describe("shouldSubscribe", () => {
     expect(shouldSubscribe(MIN_AREA_ZOOM - 0.01)).toBe(false);
     expect(shouldSubscribe(MIN_AREA_ZOOM)).toBe(true);
     expect(shouldSubscribe(12)).toBe(true);
+  });
+});
+
+describe("isInside", () => {
+  const oslo: [number, number, number, number] = [10.6, 59.8, 10.9, 60.0];
+  it("counts positions inside and on the edge, not outside", () => {
+    expect(isInside(oslo, 10.75, 59.91)).toBe(true);
+    expect(isInside(oslo, 10.6, 60.0)).toBe(true);
+    expect(isInside(oslo, 10.5, 59.91)).toBe(false);
+    expect(isInside(oslo, 10.75, 60.1)).toBe(false);
   });
 });
