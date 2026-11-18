@@ -23,7 +23,7 @@ public class LiveStateWarmUpTests
     {
         _warmUp = new LiveStateWarmUp(
             _reader, _liveState, new[] { _publisher },
-            Options.Create(new RetentionOptions { Period = Retention }), new FakeTimeProvider(Now));
+            Options.Create(new RetentionOptions { Period = Retention }), Options.Create(new LiveOptions()), new FakeTimeProvider(Now));
     }
 
     private void DatabaseHolds(params VehiclePosition[] positions) =>
@@ -56,7 +56,7 @@ public class LiveStateWarmUpTests
     {
         // The feed poller and the warm-up start at the same time; the poller may win the race.
         var fromFeed = Position("ATB:1", Now.AddSeconds(-5), lat: 63.5);
-        _liveState.Apply(new[] { fromFeed }, evictBefore: Now - Retention);
+        _liveState.Apply(new[] { fromFeed }, retainAfter: Now - Retention, liveAfter: Now - new LiveOptions().StaleAfter);
         DatabaseHolds(Position("ATB:1", Now.AddMinutes(-10), lat: 63.0));
 
         var restored = await _warmUp.RunAsync(CancellationToken.None);

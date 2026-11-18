@@ -32,6 +32,7 @@ services:
       TripUpdates__Url: ${TRIP_UPDATES_URL:-https://api.entur.io/realtime/v1/gtfs-rt/trip-updates}
       TripUpdates__PollInterval: ${TRIP_UPDATES_POLL_INTERVAL:-00:00:30}
       Retention__Period: ${RETENTION_PERIOD:-03:00:00}
+      Live__StaleAfter: ${LIVE_STALE_AFTER:-00:10:00}
       Auth__SigningKey: ${AUTH_SIGNING_KEY:-}
       Auth__AdminEmail: ${AUTH_ADMIN_EMAIL:-admin@vehicle-tracking.local}
       Auth__AdminPassword: ${AUTH_ADMIN_PASSWORD:-admin12345}

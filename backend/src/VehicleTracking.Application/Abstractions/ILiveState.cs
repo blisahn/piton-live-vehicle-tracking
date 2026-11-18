@@ -10,7 +10,9 @@ public interface ILiveState
     /// Takes the positions of one feed read. Keeps those that are newer than what is known,
     /// drops vehicles not heard from since <paramref name="evictBefore"/>, and reports exactly what changed.
     /// </summary>
-    LiveChange Apply(IReadOnlyCollection<VehiclePosition> candidates, DateTimeOffset evictBefore);
+    /// <param name="retainAfter">Older positions are neither stored nor remembered (the retention window).</param>
+    /// <param name="liveAfter">Vehicles whose newest position is older are not shown to clients.</param>
+    LiveChange Apply(IReadOnlyCollection<VehiclePosition> candidates, DateTimeOffset retainAfter, DateTimeOffset liveAfter);
 
     LiveSnapshot GetSnapshot();
 }

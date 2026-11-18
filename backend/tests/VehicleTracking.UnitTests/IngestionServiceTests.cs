@@ -19,14 +19,16 @@ public class IngestionServiceTests
     private readonly ILivePublisher _publisher2 = Substitute.For<ILivePublisher>();
     private readonly IIngestionMetrics _metrics = Substitute.For<IIngestionMetrics>();
     private readonly IngestionService _service;
+    private readonly InMemoryLiveState _state = new();
+    private readonly Microsoft.Extensions.Time.Testing.FakeTimeProvider _time = new(Now);
 
     public IngestionServiceTests()
     {
-        var time = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(Now);
+        var time = _time;
         _service = new IngestionService(
-            _feed, new SnapshotNormalizer(), new InMemoryLiveState(), _spool,
+            _feed, new SnapshotNormalizer(), _state, _spool,
             new[] { _publisher1, _publisher2 }, _metrics,
-            Options.Create(new RetentionOptions { Period = TimeSpan.FromHours(3) }), time);
+            Options.Create(new RetentionOptions { Period = TimeSpan.FromHours(3) }), Options.Create(new LiveOptions()), time);
     }
 
     private void FeedReturns(params FeedVehicle[] vehicles) =>
@@ -62,6 +64,20 @@ public class IngestionServiceTests
             Arg.Any<IReadOnlyCollection<VehiclePosition>>(), Arg.Any<CancellationToken>());
         _publisher1.DidNotReceive().Publish(Arg.Any<LiveChange>());
         _publisher2.DidNotReceive().Publish(Arg.Any<LiveChange>());
+    }
+
+    [Fact]
+    public async Task While_the_feed_is_down_no_vehicle_leaves_the_live_map()
+    {
+        FeedReturns(Feed(vehicleId: "1"));
+        await _service.RunOnceAsync(CancellationToken.None);
+
+        // Half an hour of failed reads: far beyond the 10 minute live window.
+        _feed.ReadAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new FeedReadException("down"));
+        _time.Advance(TimeSpan.FromMinutes(30));
+        await Assert.ThrowsAsync<FeedReadException>(() => _service.RunOnceAsync(CancellationToken.None));
+
+        Assert.Single(_state.GetSnapshot().Vehicles);
     }
 
     [Fact]

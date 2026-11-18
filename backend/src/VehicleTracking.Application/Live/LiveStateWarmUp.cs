@@ -14,17 +14,21 @@ public sealed class LiveStateWarmUp(
     ILiveState liveState,
     IEnumerable<ILivePublisher> publishers,
     IOptions<RetentionOptions> retention,
+    IOptions<LiveOptions> live,
     TimeProvider time)
 {
     /// <returns>How many vehicles were restored.</returns>
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
-        var oldestKept = time.GetUtcNow() - retention.Value.Period;
+        var now = time.GetUtcNow();
+        var oldestKept = now - retention.Value.Period;
         var stored = await reader.ReadLatestPerVehicleAsync(oldestKept, cancellationToken);
 
         // The feed may already have been read while the query ran. Apply only keeps positions
         // newer than what is known, so restoring late can never overwrite fresher live data.
-        var change = liveState.Apply(stored, evictBefore: oldestKept);
+        // Everything inside the retention window is remembered (so it is not stored again when the
+        // feed repeats it); only recent positions are restored onto the live map.
+        var change = liveState.Apply(stored, retainAfter: oldestKept, liveAfter: now - live.Value.StaleAfter);
 
         // These positions came from the database, so they are published but not spooled again.
         if (!change.IsEmpty)
