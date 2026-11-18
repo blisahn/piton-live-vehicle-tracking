@@ -21,7 +21,8 @@ public sealed record SystemStatusDto(
     DateTimeOffset? AlertsLastSuccessfulReadAt,
     DateTimeOffset? TripUpdatesLastSuccessfulReadAt,
     int TrackedTrips,
-    long WebSocketBytesLastMinute)
+    long WebSocketBytesLastMinute,
+    LiveFreshnessDto LiveFreshness)
 {
     public static SystemStatusDto From(SystemStatus s) => new(
         s.ServerTime,
@@ -41,5 +42,13 @@ public sealed record SystemStatusDto(
         s.AlertsLastSuccessfulReadAt,
         s.TripUpdatesLastSuccessfulReadAt,
         s.TrackedTrips,
-        s.WebSocketBytesLastMinute);
+        s.WebSocketBytesLastMinute,
+        LiveFreshnessDto.From(s.LiveFreshness));
+}
+
+/// <summary>Remembered vehicles grouped by the age of their last report; <c>OffTheMap</c> were silent longer than <c>StaleAfterMinutes</c>.</summary>
+public sealed record LiveFreshnessDto(int UnderOneMinute, int OneToFiveMinutes, int FiveMinutesToStale, int OffTheMap, double StaleAfterMinutes)
+{
+    public static LiveFreshnessDto From(VehicleTracking.Application.Live.LiveFreshness f) =>
+        new(f.UnderOneMinute, f.OneToFiveMinutes, f.FiveMinutesToStale, f.OffTheMap, f.StaleAfter.TotalMinutes);
 }

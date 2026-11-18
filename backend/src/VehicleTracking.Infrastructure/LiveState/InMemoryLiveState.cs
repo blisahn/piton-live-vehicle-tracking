@@ -62,6 +62,23 @@ internal sealed class InMemoryLiveState : ILiveState
         }
     }
 
+    public LiveFreshness CountByAge(DateTimeOffset now, TimeSpan staleAfter)
+    {
+        lock (_gate)
+        {
+            int underOne = 0, oneToFive = 0, fiveToStale = 0, offMap = 0;
+            foreach (var (key, position) in _vehicles)
+            {
+                if (!_live.Contains(key)) { offMap++; continue; }
+                var age = now - position.RecordedAt;
+                if (age < TimeSpan.FromMinutes(1)) underOne++;
+                else if (age < TimeSpan.FromMinutes(5)) oneToFive++;
+                else fiveToStale++;
+            }
+            return new LiveFreshness(underOne, oneToFive, fiveToStale, offMap, staleAfter);
+        }
+    }
+
     public LiveSnapshot GetSnapshot()
     {
         lock (_gate)
