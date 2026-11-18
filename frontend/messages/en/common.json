@@ -15,7 +15,9 @@
   "state": {
     "loading": "Loading…",
     "errorTitle": "Something went wrong",
-    "retry": "Try again"
+    "retry": "Try again",
+    "forbiddenTitle": "You are not allowed to view this page",
+    "forbiddenHint": "Only administrators can see the system status."
   },
   "timeZone": {
     "label": "Norway time ({offset})",

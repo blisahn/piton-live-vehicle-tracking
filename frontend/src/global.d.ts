@@ -1,3 +1,4 @@
+import type auth from "../messages/en/auth.json";
 import type alerts from "../messages/en/alerts.json";
 import type common from "../messages/en/common.json";
 import type connection from "../messages/en/connection.json";
@@ -21,6 +22,7 @@ declare module "next-intl" {
       status: typeof status;
       route: typeof route;
       alerts: typeof alerts;
+      auth: typeof auth;
     };
   }
 }

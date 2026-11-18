@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using VehicleTracking.Application.Abstractions;
 using VehicleTracking.Application.Configuration;
+using VehicleTracking.Infrastructure.Auth;
 using VehicleTracking.Infrastructure.Entur;
 using VehicleTracking.Infrastructure.LiveState;
 using VehicleTracking.Infrastructure.Metrics;
@@ -82,7 +83,14 @@ public static class DependencyInjection
         services.AddScoped<IIngestStatsReader, EfIngestStatsReader>();
         services.AddScoped<ILatestPositionReader, EfLatestPositionReader>();
 
+        services.AddScoped<IUserStore, EfUserStore>();
+        services.AddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
+        services.AddSingleton<JwtSigningKey>();
+        services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+
         services.AddHostedService<DatabaseInitializer>();
+        services.AddHostedService<AdminSeeder>();
         services.AddHostedService<FeedPollingWorker>();
         services.AddHostedService<AlertPollingWorker>();
         services.AddHostedService<TripUpdatePollingWorker>();

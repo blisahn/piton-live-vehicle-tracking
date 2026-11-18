@@ -7,8 +7,10 @@
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.29.3" />
     <PackageReference Include="Grpc.Tools" Version="2.69.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="7.1.2" />
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="8.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>

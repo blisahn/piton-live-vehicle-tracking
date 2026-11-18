@@ -11,7 +11,8 @@ internal sealed class VehicleSocketSession(
     WebSocketTraffic traffic,
     TimeProvider time,
     ILogger<VehicleSocketSession> logger,
-    VehicleSubscription? initialSubscription = null)
+    VehicleSubscription? initialSubscription = null,
+    DateTimeOffset? tokenExpiresAt = null)
 {
     /// <summary>Client messages above this size are ignored (the rest of the message is discarded, the connection stays).</summary>
     internal const int MaxClientMessageBytes = 64 * 1024;
@@ -25,6 +26,10 @@ internal sealed class VehicleSocketSession(
 
     private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(2);
 
+    /// <summary>Custom close code: the access token the socket was opened with has expired.</summary>
+    internal const int TokenExpiredCloseStatus = 4401;
+
+    private bool _tokenExpired;
     private long _lastSentSequence;
     private long _bytesSent;
     private VehicleSubscription _subscription = initialSubscription ?? VehicleSubscription.Everything;
@@ -45,11 +50,12 @@ internal sealed class VehicleSocketSession(
         {
             var send = SendLoopAsync(outbox, session.Token);
             var receive = ReceiveLoopAsync(throttle, session.Token);
+            var expiry = ExpiryLoopAsync(session.Token);
 
-            // Whichever ends first (client closed, send failed, server stopping) ends the other.
-            await Task.WhenAny(send, receive);
+            // Whichever ends first (client closed, send failed, token expired, server stopping) ends the others.
+            await Task.WhenAny(send, receive, expiry);
             await session.CancelAsync();
-            await Task.WhenAll(send, receive);
+            await Task.WhenAll(send, receive, expiry);
         }
         catch (Exception ex) when (ex is OperationCanceledException or WebSocketException)
         {
@@ -62,6 +68,20 @@ internal sealed class VehicleSocketSession(
             logger.LogDebug("WebSocket session ended after sending {Bytes} bytes", Interlocked.Read(ref _bytesSent));
             await CloseAsync();
         }
+    }
+
+    /// <summary>Ends the session when the token expires; the client refreshes it and reconnects.</summary>
+    private async Task ExpiryLoopAsync(CancellationToken cancellationToken)
+    {
+        if (tokenExpiresAt is not { } expiresAt)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return;
+        }
+
+        var remaining = expiresAt - time.GetUtcNow();
+        if (remaining > TimeSpan.Zero) await Task.Delay(remaining, time, cancellationToken);
+        _tokenExpired = true;
     }
 
     private async Task SendLoopAsync(ClientOutbox outbox, CancellationToken cancellationToken)
@@ -171,7 +191,10 @@ internal sealed class VehicleSocketSession(
         try
         {
             using var timeout = new CancellationTokenSource(CloseTimeout);
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, statusDescription: null, timeout.Token);
+            if (_tokenExpired)
+                await socket.CloseAsync((WebSocketCloseStatus)TokenExpiredCloseStatus, "token expired", timeout.Token);
+            else
+                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, statusDescription: null, timeout.Token);
         }
         catch (Exception ex) when (ex is OperationCanceledException or WebSocketException)
         {

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using VehicleTracking.Application.Alerts;
+using VehicleTracking.Application.Auth;
 using VehicleTracking.Application.History;
 using VehicleTracking.Application.Ingestion;
 using VehicleTracking.Application.Live;
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<VehicleHistoryService>();
         services.AddScoped<LiveStateWarmUp>();
         services.AddScoped<SystemStatusService>();
+        services.AddScoped<AuthService>();
         return services;
     }
 }

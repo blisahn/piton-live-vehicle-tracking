@@ -15,7 +15,9 @@
   "state": {
     "loading": "Yükleniyor…",
     "errorTitle": "Bir sorun oluştu",
-    "retry": "Tekrar dene"
+    "retry": "Tekrar dene",
+    "forbiddenTitle": "Bu sayfayı görme yetkiniz yok",
+    "forbiddenHint": "Sistem durumunu yalnızca yöneticiler görebilir."
   },
   "timeZone": {
     "label": "Norveç saati ({offset})",

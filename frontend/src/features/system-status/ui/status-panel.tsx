@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useConnectionStore } from "@/entities/vehicle";
 import { cn } from "@/lib/utils";
-import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
+import { ApiError } from "@/shared/api/http";
+import { EmptyState, ErrorState, ForbiddenState, LoadingState } from "@/shared/ui/state-views";
 import { useSystemStatus, type SystemStatus } from "../api/status";
 import { deriveHealth, type HealthLevel } from "../model/health";
 
@@ -22,6 +23,7 @@ export function StatusPanel() {
 
   if (isPending && !error) return <LoadingState />;
   // Error and nothing to show yet: offer a retry.
+  if (error instanceof ApiError && error.status === 403) return <ForbiddenState />;
   if (!data) return <ErrorState message={error?.message ?? t("loadError")} onRetry={() => void refetch()} />;
 
   return (

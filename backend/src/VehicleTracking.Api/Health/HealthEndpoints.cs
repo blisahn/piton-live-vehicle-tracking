@@ -19,14 +19,14 @@ internal static class HealthEndpoints
     {
         // Liveness: the process is up and answering. Runs no checks, so a database outage
         // never makes an orchestrator restart a backend that is still collecting.
-        endpoints.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+        endpoints.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
 
         // Readiness: is the pipeline actually working? Lists each check with its reason.
         endpoints.MapHealthChecks("/health/ready", new HealthCheckOptions
         {
             Predicate = check => check.Tags.Contains(ReadyTag),
             ResponseWriter = WriteReport,
-        });
+        }).AllowAnonymous();
         return endpoints;
     }
 

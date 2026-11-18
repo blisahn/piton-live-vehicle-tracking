@@ -13,6 +13,10 @@ public sealed class TrackingDbContext(DbContextOptions<TrackingDbContext> option
 
     public DbSet<TransitStopRow> TransitStops => Set<TransitStopRow>();
 
+    public DbSet<UserRow> Users => Set<UserRow>();
+
+    public DbSet<RefreshTokenRow> RefreshTokens => Set<RefreshTokenRow>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PositionRow>(e =>
@@ -60,6 +64,31 @@ public sealed class TrackingDbContext(DbContextOptions<TrackingDbContext> option
             e.Property(s => s.Latitude).HasColumnName("latitude");
             e.Property(s => s.Longitude).HasColumnName("longitude");
             e.Property(s => s.FetchedAt).HasColumnName("fetched_at");
+        });
+
+        modelBuilder.Entity<UserRow>(e =>
+        {
+            e.ToTable("users");
+            e.HasKey(u => u.Id);
+            e.Property(u => u.Id).HasColumnName("id");
+            e.Property(u => u.Email).HasColumnName("email");
+            e.Property(u => u.PasswordHash).HasColumnName("password_hash");
+            e.Property(u => u.Role).HasColumnName("role");
+            e.Property(u => u.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<RefreshTokenRow>(e =>
+        {
+            e.ToTable("refresh_tokens");
+            e.HasKey(t => t.Id);
+            e.Property(t => t.Id).HasColumnName("id");
+            e.Property(t => t.UserId).HasColumnName("user_id");
+            e.Property(t => t.FamilyId).HasColumnName("family_id");
+            e.Property(t => t.TokenHash).HasColumnName("token_hash");
+            e.Property(t => t.CreatedAt).HasColumnName("created_at");
+            e.Property(t => t.ExpiresAt).HasColumnName("expires_at");
+            e.Property(t => t.RevokedAt).HasColumnName("revoked_at");
+            e.Property(t => t.ReplacedById).HasColumnName("replaced_by_id");
         });
     }
 }

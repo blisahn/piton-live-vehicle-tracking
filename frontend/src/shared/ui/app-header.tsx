@@ -9,7 +9,20 @@ import { utcOffsetLabel } from "@/i18n/time-zone";
 import { cn } from "@/lib/utils";
 
 /** Top bar: app name, the two screens, a slot for live status, and the language switch. */
-export function AppHeader({ status }: { status?: ReactNode }) {
+export function AppHeader({
+  status,
+  account,
+  showStatusLink = false,
+  navigation = true,
+}: {
+  status?: ReactNode;
+  /** The signed-in user's controls (e-mail, logout). */
+  account?: ReactNode;
+  /** The status screen is for admins only. */
+  showStatusLink?: boolean;
+  /** False on the login and register screens, where there is nowhere to go yet. */
+  navigation?: boolean;
+}) {
   const t = useTranslations("common");
   const pathname = usePathname();
   const links = [
@@ -17,13 +30,14 @@ export function AppHeader({ status }: { status?: ReactNode }) {
     { href: "/alerts", label: t("nav.alerts"), short: t("nav.alerts") },
     { href: "/status", label: t("nav.status"), short: t("nav.statusShort") },
   ] as const;
+  const visibleLinks = navigation ? links.filter((link) => link.href !== "/status" || showStatusLink) : [];
 
   return (
     <header className="flex items-center gap-1 border-b px-1.5 py-2 sm:gap-4 sm:px-3">
       {/* Not enough room on a phone; the nav below is labelled with it instead. */}
       <span className="hidden whitespace-nowrap text-sm font-semibold sm:inline">{t("appName")}</span>
       <nav className="flex min-w-0 gap-0 sm:gap-1" aria-label={t("appName")}>
-        {links.map((link) => (
+        {visibleLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
@@ -43,6 +57,7 @@ export function AppHeader({ status }: { status?: ReactNode }) {
         <TimeZoneNote />
         {status}
         <LanguageSwitch />
+        {account}
       </div>
     </header>
   );
