@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace VehicleTracking.Api.Realtime;
 
 internal static class VehicleSocketEndpoint
@@ -33,9 +35,16 @@ internal static class VehicleSocketEndpoint
             using var stop = CancellationTokenSource.CreateLinkedTokenSource(
                 context.RequestAborted, lifetime.ApplicationStopping);
 
-            await new VehicleSocketSession(socket, hub, traffic, time, logger, initial).RunAsync(stop.Token);
-        }).ExcludeFromDescription();
+            await new VehicleSocketSession(socket, hub, traffic, time, logger, initial, ExpiryOf(context.User))
+                .RunAsync(stop.Token);
+        }).RequireAuthorization().ExcludeFromDescription();
 
         return endpoints;
     }
+
+    /// <summary>The moment the access token the socket was opened with stops being valid.</summary>
+    private static DateTimeOffset? ExpiryOf(ClaimsPrincipal user) =>
+        long.TryParse(user.FindFirst("exp")?.Value, out var seconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds)
+            : null;
 }

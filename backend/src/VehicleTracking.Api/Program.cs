@@ -1,3 +1,5 @@
+using Microsoft.OpenApi.Models;
+using VehicleTracking.Api.Auth;
 using VehicleTracking.Api.Errors;
 using VehicleTracking.Api.Health;
 using VehicleTracking.Api.Realtime;
@@ -26,6 +28,11 @@ builder.Services.AddOptions<RetentionOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services.AddOptions<AuthOptions>()
+    .BindConfiguration(AuthOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -41,20 +48,39 @@ builder.Services.AddSingleton<IWebSocketTraffic>(provider => provider.GetRequire
 // The browser app is served from another origin; only the configured origins may call the API or open a socket.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(cors => cors.AddDefaultPolicy(policy =>
-    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<RequestValidationExceptionHandler>();
+builder.Services.AddExceptionHandler<AuthExceptionHandler>();
 builder.Services.AddExceptionHandler<TransitCatalogExceptionHandler>();
+builder.Services.AddAppAuthentication();
+builder.Services.AddAuthRateLimit();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(swagger =>
+{
+    swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Sign in with POST /api/auth/login, then paste the accessToken here.",
+    });
+    swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = [],
+    });
+});
 builder.Services.AddAppHealthChecks();
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
 
 var webSockets = new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) };
 foreach (var origin in allowedOrigins)

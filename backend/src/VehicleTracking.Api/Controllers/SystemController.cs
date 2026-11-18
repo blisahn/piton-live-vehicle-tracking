@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VehicleTracking.Api.Contracts;
+using VehicleTracking.Application.Auth;
 using VehicleTracking.Application.Status;
 
 namespace VehicleTracking.Api.Controllers;
@@ -7,6 +9,7 @@ namespace VehicleTracking.Api.Controllers;
 /// <summary>Operational status of the collector.</summary>
 [ApiController]
 [Route("api/status")]
+[Authorize(Roles = Roles.Admin)]
 public sealed class SystemController(SystemStatusService status) : ControllerBase
 {
     [HttpGet]
