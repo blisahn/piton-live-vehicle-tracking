@@ -21,6 +21,8 @@ export const systemStatusSchema = z.object({
   // Added later; optional so the screen still works against an older backend.
   tripUpdatesLastSuccessfulReadAt: z.string().nullable().optional(),
   trackedTrips: z.number().optional(),
+  // Bytes sent to all WebSocket clients in the last minute; optional so an older backend still works.
+  webSocketBytesLastMinute: z.number().optional(),
 });
 
 export type SystemStatus = z.infer<typeof systemStatusSchema>;

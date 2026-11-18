@@ -72,6 +72,10 @@
     "trackedTrips": {
       "label": "Gerçek zamanlı verisi olan seferler",
       "hint": "Şu an gerçek zamanlı tarifesi olan seferler"
+    },
+    "webSocketTraffic": {
+      "label": "WebSocket trafiği (son 1 dk)",
+      "hint": "{clients, plural, =0 {Bağlı istemci yok} other {# istemciye gönderilen toplam}}"
     }
   }
 }
