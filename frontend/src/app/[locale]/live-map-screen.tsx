@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useIsDesktop } from "@/shared/lib/use-media-query";
-import { useSelectedVehicle } from "@/entities/vehicle";
+import { lineMatches, useLines } from "@/entities/transit";
+import { useSelectedVehicle, useSubscriptionStore } from "@/entities/vehicle";
 import {
   LiveMap,
   VehicleFilter,
@@ -31,8 +32,27 @@ export function LiveMapScreen() {
   const t = useTranslations("vehicle");
   const [selectedKey, selectVehicle] = useSelectedVehicle();
   const [filter] = useVehicleFilter();
+  const lines = useLines();
   const [track, setTrack] = useState<TrackOverlay | null>(null);
   const [route, setRoute] = useState<RouteOverlay | null>(null);
+
+  // What the server sends follows the screen's state: the selected vehicle always, the matching lines while a
+  // filter is set, otherwise the visible area (which the map keeps up to date). A filter that matches no line
+  // (a vehicle number, say) cannot be answered by line, so it suspends the area and everything arrives.
+  useEffect(() => {
+    const { setKeys, setLines, setViewportSuspended } = useSubscriptionStore.getState();
+    setKeys(selectedKey ? [selectedKey] : []);
+
+    const needle = filter.trim().toLowerCase();
+    const matched: string[] = [];
+    if (needle !== "") {
+      for (const line of lines.values()) if (lineMatches(line, needle)) matched.push(line.id);
+    }
+    // Too many lines for one subscription behaves like "no line": the client-side filter takes over.
+    const byLine = matched.length > 0 && matched.length <= MAX_SUBSCRIBED_LINES;
+    setLines(byLine ? matched : []);
+    setViewportSuspended(needle !== "" && !byLine);
+  }, [selectedKey, filter, lines]);
 
   // Drop the previous vehicle's overlays during render (React's "adjust state on prop change" pattern).
   const [overlaysFor, setOverlaysFor] = useState(selectedKey);
@@ -174,6 +194,8 @@ export function LiveMapScreen() {
   );
 }
 
+/** The server accepts at most this many lines per subscription. */
+const MAX_SUBSCRIBED_LINES = 500;
 const DRAWER_SNAP_POINTS = ["140px", 0.5, 0.92];
 const DETAIL_PANEL_ID = "detail";
 const DETAIL_CONTENT_ID = "vehicle-detail-panel";

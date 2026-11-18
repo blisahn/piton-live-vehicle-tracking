@@ -2,6 +2,12 @@ import { useAlertsVersionStore } from "../model/alerts-version-store";
 import type { ConnectionStatus } from "../model/connection-store";
 import type { LiveVehicleStore } from "../model/live-vehicle-store";
 import { serverMessageSchema } from "../model/schemas";
+import {
+  effectiveSubscription,
+  subscriptionKey,
+  useSubscriptionStore,
+  type Subscription,
+} from "../model/subscription-store";
 
 const INITIAL_RETRY_MS = 1_000;
 const MAX_RETRY_MS = 15_000;
@@ -9,6 +15,10 @@ const MAX_RETRY_MS = 15_000;
 const ATTEMPTS_BEFORE_DISCONNECTED = 4;
 /** The server sends a heartbeat every 10 s when idle; this much silence means the connection is dead. */
 const SILENCE_TIMEOUT_MS = 25_000;
+/** Pans and filter keystrokes arrive in bursts; one subscription message follows the burst. */
+const SUBSCRIBE_DEBOUNCE_MS = 300;
+/** A long line list would make the connect URL too long for servers (about 8 KB); it is sent as a message instead. */
+const MAX_LINES_IN_URL = 100;
 
 /**
  * Keeps one WebSocket to the backend alive and feeds what arrives into the store.
@@ -22,6 +32,10 @@ export class VehicleSocket {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private failedAttempts = 0;
+  private subscribeTimer: ReturnType<typeof setTimeout> | null = null;
+  private unsubscribeStore: (() => void) | null = null;
+  /** What the server currently has for this connection (what the URL carried, or the last message sent). */
+  private lastSentKey = "";
   private stopped = true;
 
   constructor(
@@ -35,6 +49,7 @@ export class VehicleSocket {
     this.stopped = false;
     window.addEventListener("online", this.retryNow);
     document.addEventListener("visibilitychange", this.retryNow);
+    this.unsubscribeStore = useSubscriptionStore.subscribe(() => this.scheduleSubscribe());
     this.onStatus("connecting");
     this.open();
   }
@@ -43,14 +58,25 @@ export class VehicleSocket {
     this.stopped = true;
     window.removeEventListener("online", this.retryNow);
     document.removeEventListener("visibilitychange", this.retryNow);
+    this.unsubscribeStore?.();
+    this.unsubscribeStore = null;
     this.clearTimers();
     this.socket?.close();
     this.socket = null;
   }
 
   private open(): void {
-    const socket = new WebSocket(this.url);
+    // Every (re)connect starts from the current subscription, so the first snapshot is already filtered.
+    const subscription = effectiveSubscription(useSubscriptionStore.getState());
+    const { url, carried } = this.connectUrl(subscription);
+    this.lastSentKey = subscriptionKey(carried);
+    const socket = new WebSocket(url);
     this.socket = socket;
+
+    // Anything that changed while the connection was being set up (or was not carried by the URL) goes out now.
+    socket.onopen = () => {
+      if (socket === this.socket) this.scheduleSubscribe();
+    };
 
     socket.onmessage = (event) => {
       // A socket we already replaced may still deliver a late message; ignore it.
@@ -86,6 +112,42 @@ export class VehicleSocket {
     this.armSilenceTimer();
   }
 
+  /** The connect URL with the subscription as query parameters, and the part of it the URL really carries. */
+  private connectUrl(subscription: Subscription): { url: string; carried: Subscription } {
+    const carried: Subscription = {
+      bbox: subscription.bbox,
+      lines: subscription.lines.length <= MAX_LINES_IN_URL ? subscription.lines : [],
+      keys: subscription.keys,
+    };
+    const params = new URLSearchParams();
+    if (carried.bbox) params.set("bbox", carried.bbox.join(","));
+    if (carried.lines.length > 0) params.set("lines", carried.lines.join(","));
+    if (carried.keys.length > 0) params.set("keys", carried.keys.join(","));
+    const query = params.toString();
+    return { url: query ? `${this.url}?${query}` : this.url, carried };
+  }
+
+  /** Coalesces changes: the message goes out once the store has been quiet for a moment. */
+  private scheduleSubscribe(): void {
+    if (this.stopped) return;
+    if (this.subscribeTimer) clearTimeout(this.subscribeTimer);
+    this.subscribeTimer = setTimeout(() => {
+      this.subscribeTimer = null;
+      this.sendSubscription();
+    }, SUBSCRIBE_DEBOUNCE_MS);
+  }
+
+  private sendSubscription(): void {
+    const socket = this.socket;
+    // Not open: the next connect (or the open event) picks the current subscription up.
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const subscription = effectiveSubscription(useSubscriptionStore.getState());
+    const key = subscriptionKey(subscription);
+    if (key === this.lastSentKey) return;
+    this.lastSentKey = key;
+    socket.send(JSON.stringify({ type: "subscribe", ...subscription }));
+  }
+
   private scheduleRetry(): void {
     this.clearTimers();
     this.failedAttempts++;
@@ -113,6 +175,7 @@ export class VehicleSocket {
   private clearTimers(): void {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     if (this.silenceTimer) clearTimeout(this.silenceTimer);
-    this.retryTimer = this.silenceTimer = null;
+    if (this.subscribeTimer) clearTimeout(this.subscribeTimer);
+    this.retryTimer = this.silenceTimer = this.subscribeTimer = null;
   }
 }
