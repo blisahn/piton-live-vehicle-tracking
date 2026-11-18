@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { snapTrackToPath, type GeoPoint } from "@/shared/lib/geo";
+import { snapTrackToPath, splitAtGaps, type GeoPoint } from "@/shared/lib/geo";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
 import { useVehicleHistory } from "../api/history";
 import {
@@ -15,10 +15,14 @@ import {
   RANGE_PRESETS,
   type RangeMinutes,
 } from "../model/time-range";
+import { TRACK_GAP_SECONDS } from "../model/track-gaps";
 import { useLiveTail } from "../model/use-live-tail";
 
-/** `measurements` are the positions the vehicle reported (oldest first); `path` is the line drawn through them. */
-export type HistoryTrack = { path: GeoPoint[]; measurements: GeoPoint[] };
+/** One drawn piece of the track: measured, or a guessed line across a silence of `gapSeconds`. */
+export type TrackSegment = { kind: "measured"; path: GeoPoint[] } | { kind: "gap"; path: GeoPoint[]; gapSeconds: number };
+
+/** `measurements` are the positions the vehicle reported (oldest first); `segments` are the lines drawn through them. */
+export type HistoryTrack = { segments: TrackSegment[]; measurements: GeoPoint[] };
 
 type HistoryPanelProps = {
   vehicleKey: string;
@@ -58,9 +62,17 @@ export function HistoryPanel({ vehicleKey, onTrackChange, snapPath = null }: His
   // Depends on `items` (stable until data changes), so it cannot loop.
   useEffect(() => {
     if (!showOnMap) return;
-    const measurements = items.map(({ lat, lon }) => ({ lat, lon })).reverse();
-    const path = snapPath && snapPath.length >= 2 ? snapTrackToPath(measurements, snapPath) : measurements;
-    onTrackChange({ path, measurements });
+    const timed = items.map(({ lat, lon, recordedAt }) => ({ lat, lon, at: Date.parse(recordedAt) })).reverse();
+    const measurements = timed.map(({ lat, lon }) => ({ lat, lon }));
+    // Snapping works exactly as before, piece by piece; only how a long silence is drawn changes.
+    const snap = (points: GeoPoint[]) =>
+      snapPath && snapPath.length >= 2 ? snapTrackToPath(points, snapPath) : points;
+    const segments = splitAtGaps(timed, TRACK_GAP_SECONDS * 1000).map((piece): TrackSegment =>
+      piece.kind === "gap"
+        ? { kind: "gap", path: snap(piece.points), gapSeconds: piece.gapSeconds }
+        : { kind: "measured", path: snap(piece.points) },
+    );
+    onTrackChange({ segments, measurements });
   }, [showOnMap, items, snapPath, onTrackChange]);
 
   // Clear the track when the vehicle changes, the toggle goes off, or the panel unmounts.

@@ -23,5 +23,8 @@
     "metro": "Metro",
     "water": "Feribot / tekne",
     "unknown": "Türü bilinmiyor"
+  },
+  "track": {
+    "gap": "{minutes, plural, =0 {} other {# dk }}{seconds} sn konum yok"
   }
 }
