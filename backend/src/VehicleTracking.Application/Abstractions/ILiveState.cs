@@ -15,4 +15,7 @@ public interface ILiveState
     LiveChange Apply(IReadOnlyCollection<VehiclePosition> candidates, DateTimeOffset retainAfter, DateTimeOffset liveAfter);
 
     LiveSnapshot GetSnapshot();
+
+    /// <summary>Groups the remembered vehicles by the age of their last report, for the status screen.</summary>
+    LiveFreshness CountByAge(DateTimeOffset now, TimeSpan staleAfter);
 }

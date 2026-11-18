@@ -77,5 +77,24 @@
       "label": "WebSocket traffic (last minute)",
       "hint": "{clients, plural, =0 {No clients connected} one {Sent to # client} other {Sent to # clients in total}}"
     }
+  },
+  "freshness": {
+    "title": "How recently vehicles reported",
+    "hint": "Vehicles silent for more than {stale} minutes are taken off the live map (usually their trip has ended); their history is kept for 3 hours.",
+    "columns": {
+      "lastReport": "Last report",
+      "vehicles": "Vehicles",
+      "share": "Share",
+      "onMap": "On the map"
+    },
+    "rows": {
+      "underOne": "Under 1 minute ago",
+      "oneToFive": "1–5 minutes ago",
+      "fiveToStale": "5–{stale} minutes ago",
+      "offTheMap": "{stale} minutes – 3 hours ago"
+    },
+    "yes": "Yes",
+    "no": "No, removed",
+    "summary": "{onMap, number} of {total, number} vehicles are on the map."
   }
 }

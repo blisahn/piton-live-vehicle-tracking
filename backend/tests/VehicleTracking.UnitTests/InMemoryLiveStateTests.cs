@@ -1,3 +1,4 @@
+using VehicleTracking.Application.Live;
 using VehicleTracking.Infrastructure.LiveState;
 using static VehicleTracking.UnitTests.TestData;
 
@@ -111,5 +112,24 @@ public class InMemoryLiveStateTests
 
         Assert.Single(change.Upserted);
         Assert.Single(_state.GetSnapshot().Vehicles);
+    }
+
+    [Fact]
+    public void Remembered_vehicles_are_grouped_by_the_age_of_their_last_report()
+    {
+        _state.Apply(
+            new[]
+            {
+                Position("A:1", at: Now.AddSeconds(-20)),
+                Position("A:2", at: Now.AddMinutes(-3)),
+                Position("A:3", at: Now.AddMinutes(-7)),
+                Position("A:4", at: Now.AddMinutes(-40)),
+            },
+            retainAfter: Now.AddHours(-3),
+            liveAfter: Now.AddMinutes(-10));
+
+        var freshness = _state.CountByAge(Now, TimeSpan.FromMinutes(10));
+
+        Assert.Equal(new LiveFreshness(1, 1, 1, 1, TimeSpan.FromMinutes(10)), freshness);
     }
 }

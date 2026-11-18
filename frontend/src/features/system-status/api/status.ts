@@ -23,6 +23,16 @@ export const systemStatusSchema = z.object({
   trackedTrips: z.number().optional(),
   // Bytes sent to all WebSocket clients in the last minute; optional so an older backend still works.
   webSocketBytesLastMinute: z.number().optional(),
+  // Remembered vehicles by the age of their last report; optional so an older backend still works.
+  liveFreshness: z
+    .object({
+      underOneMinute: z.number(),
+      oneToFiveMinutes: z.number(),
+      fiveMinutesToStale: z.number(),
+      offTheMap: z.number(),
+      staleAfterMinutes: z.number(),
+    })
+    .optional(),
 });
 
 export type SystemStatus = z.infer<typeof systemStatusSchema>;

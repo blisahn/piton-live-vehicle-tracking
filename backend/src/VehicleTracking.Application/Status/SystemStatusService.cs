@@ -1,5 +1,8 @@
+using Microsoft.Extensions.Options;
 using VehicleTracking.Application.Abstractions;
 using VehicleTracking.Application.Alerts;
+using VehicleTracking.Application.Configuration;
+using VehicleTracking.Application.Live;
 using VehicleTracking.Application.TripUpdates;
 
 namespace VehicleTracking.Application.Status;
@@ -14,6 +17,7 @@ public sealed class SystemStatusService(
     ILiveState liveState,
     AlertService alerts,
     TripUpdateService tripUpdates,
+    IOptions<LiveOptions> live,
     TimeProvider time)
 {
     public async Task<SystemStatus> GetAsync(CancellationToken cancellationToken)
@@ -40,7 +44,8 @@ public sealed class SystemStatusService(
             alerts.Status.LastSuccessfulReadAt,
             tripUpdates.Status.LastSuccessfulReadAt,
             tripUpdates.Status.TripCount,
-            traffic.BytesSentLastMinute);
+            traffic.BytesSentLastMinute,
+            liveState.CountByAge(now, live.Value.StaleAfter));
     }
 }
 
@@ -64,4 +69,5 @@ public sealed record SystemStatus(
     DateTimeOffset? AlertsLastSuccessfulReadAt,
     DateTimeOffset? TripUpdatesLastSuccessfulReadAt,
     int TrackedTrips,
-    long WebSocketBytesLastMinute);
+    long WebSocketBytesLastMinute,
+    LiveFreshness LiveFreshness);

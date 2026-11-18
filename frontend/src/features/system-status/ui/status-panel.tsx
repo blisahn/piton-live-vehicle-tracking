@@ -3,6 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useConnectionStore } from "@/entities/vehicle";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/shared/api/http";
@@ -55,7 +56,60 @@ export function StatusPanel() {
       ) : null}
 
       <StatusGrid status={data} />
+      {data.liveFreshness ? <FreshnessTable freshness={data.liveFreshness} /> : null}
     </div>
+  );
+}
+
+/**
+ * How recently the vehicles last reported. Vehicles silent for longer than the live window are
+ * taken off the map (usually a finished trip) but still counted here, so the effect is visible.
+ */
+function FreshnessTable({ freshness }: { freshness: NonNullable<SystemStatus["liveFreshness"]> }) {
+  const t = useTranslations("status.freshness");
+  const format = useFormatter();
+  const stale = Math.round(freshness.staleAfterMinutes);
+  const onMap = freshness.underOneMinute + freshness.oneToFiveMinutes + freshness.fiveMinutesToStale;
+  const total = onMap + freshness.offTheMap;
+  const rows = [
+    { label: t("rows.underOne"), count: freshness.underOneMinute, onMap: true },
+    { label: t("rows.oneToFive"), count: freshness.oneToFiveMinutes, onMap: true },
+    { label: t("rows.fiveToStale", { stale }), count: freshness.fiveMinutesToStale, onMap: true },
+    { label: t("rows.offTheMap", { stale }), count: freshness.offTheMap, onMap: false },
+  ];
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3">
+        <div>
+          <h2 className="text-sm font-semibold">{t("title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("hint", { stale })}</p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("columns.lastReport")}</TableHead>
+              <TableHead className="text-right">{t("columns.vehicles")}</TableHead>
+              <TableHead className="text-right">{t("columns.share")}</TableHead>
+              <TableHead>{t("columns.onMap")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.label} className={row.onMap ? undefined : "text-muted-foreground"}>
+                <TableCell>{row.label}</TableCell>
+                <TableCell className="text-right tabular-nums">{format.number(row.count)}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {total > 0 ? format.number(row.count / total, { style: "percent", maximumFractionDigits: 0 }) : "–"}
+                </TableCell>
+                <TableCell>{row.onMap ? t("yes") : t("no")}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <p className="text-xs text-muted-foreground">{t("summary", { onMap, total })}</p>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -77,5 +77,24 @@
       "label": "WebSocket trafiği (son 1 dk)",
       "hint": "{clients, plural, =0 {Bağlı istemci yok} other {# istemciye gönderilen toplam}}"
     }
+  },
+  "freshness": {
+    "title": "Araçların son konum zamanı",
+    "hint": "{stale} dakikadan uzun süredir konum göndermeyen araçlar canlı haritadan kaldırılır (genellikle seferi bitmiştir); geçmişleri 3 saat boyunca tutulur.",
+    "columns": {
+      "lastReport": "Son konum",
+      "vehicles": "Araç",
+      "share": "Pay",
+      "onMap": "Haritada"
+    },
+    "rows": {
+      "underOne": "1 dakikadan yeni",
+      "oneToFive": "1–5 dakika önce",
+      "fiveToStale": "5–{stale} dakika önce",
+      "offTheMap": "{stale} dakika – 3 saat önce"
+    },
+    "yes": "Evet",
+    "no": "Hayır, kaldırıldı",
+    "summary": "Toplam {total, number} aracın {onMap, number} tanesi haritada."
   }
 }
