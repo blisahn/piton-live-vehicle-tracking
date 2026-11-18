@@ -29,6 +29,11 @@ public class ArchitectureTests
             .HaveDependencyOnAny(InfrastructureNs, ApiNs));
 
     [Fact]
+    public void Application_does_not_depend_on_aspnet_core_or_identity() =>
+        AssertNoViolations(Types.InAssembly(Application).ShouldNot().HaveDependencyOnAny(
+            "Microsoft.AspNetCore", "Microsoft.IdentityModel", "System.IdentityModel"));
+
+    [Fact]
     public void Infrastructure_does_not_depend_on_api() =>
         AssertNoViolations(Types.InAssembly(Infrastructure).ShouldNot().HaveDependencyOn(ApiNs));
 
