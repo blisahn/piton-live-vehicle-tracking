@@ -31,6 +31,13 @@ export type SocketAuth = {
 
 /** The server closes with this code when the access token has expired. */
 const CLOSE_TOKEN_EXPIRED = 4401;
+/**
+ * A handshake the server refuses (for example a token signed with a key the restarted server no
+ * longer has) closes before it opens, and the browser hides the 401. Renew the token then. After a
+ * renewal that worked, wait this long before renewing again for the same reason, so a handshake
+ * that keeps failing for another cause does not rotate the refresh token on every attempt.
+ */
+const HANDSHAKE_REFRESH_INTERVAL_MS = 30_000;
 
 /**
  * Keeps one WebSocket to the backend alive and feeds what arrives into the store.
@@ -44,6 +51,7 @@ export class VehicleSocket {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private failedAttempts = 0;
+  private lastHandshakeRefresh = 0;
   private subscribeTimer: ReturnType<typeof setTimeout> | null = null;
   private unsubscribeStore: (() => void) | null = null;
   /** What the server currently has for this connection (what the URL carried, or the last message sent). */
@@ -101,7 +109,9 @@ export class VehicleSocket {
     this.socket = socket;
 
     // Anything that changed while the connection was being set up (or was not carried by the URL) goes out now.
+    let opened = false;
     socket.onopen = () => {
+      opened = true;
       if (socket === this.socket) this.scheduleSubscribe();
     };
 
@@ -136,6 +146,23 @@ export class VehicleSocket {
         this.clearTimers();
         void this.auth.refresh().then((renewed) => {
           if (renewed && !this.stopped) this.open();
+        });
+        return;
+      }
+      if (!opened && Date.now() - this.lastHandshakeRefresh > HANDSHAKE_REFRESH_INTERVAL_MS) {
+        // Possibly refused for its token: renew it before the next attempt. If the server is just
+        // unreachable the refresh fails without ending the session and the normal backoff continues.
+        this.clearTimers();
+        void this.auth.refresh().then((renewed) => {
+          if (this.stopped) return;
+          if (renewed) {
+            // Only a renewal that worked starts the quiet period; while the server is unreachable
+            // every attempt may try again, and the backoff already spaces them out.
+            this.lastHandshakeRefresh = Date.now();
+            this.open();
+          } else {
+            this.scheduleRetry();
+          }
         });
         return;
       }
