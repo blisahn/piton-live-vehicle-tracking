@@ -1,5 +1,5 @@
 import { screen } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 import { renderWithProviders } from "@/test/render";
 import { api, server } from "@/test/server";
@@ -37,6 +37,19 @@ describe("StatusPanel", () => {
     expect(card("Bağlı istemciler")).toHaveTextContent("2");
     // Measured between two server timestamps, not against the browser clock.
     expect(card("Son başarılı okuma")).toHaveTextContent("3 saniye önce");
+  });
+
+  it("shows the loading state until the first answer arrives", async () => {
+    server.use(
+      http.get(api("/api/status"), async () => {
+        await delay("infinite");
+        return HttpResponse.json(status());
+      }),
+    );
+    renderWithProviders(<StatusPanel />);
+
+    expect(await screen.findByText("Yükleniyor…")).toBeInTheDocument();
+    expect(screen.queryByText("Son bir saatte yazılan satır")).not.toBeInTheDocument();
   });
 
   it("says the row count is unknown while the database is unreachable", async () => {
