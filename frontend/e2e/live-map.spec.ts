@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { adminHeaders, expect, test } from "./fixtures";
 
 const API_URL = process.env.E2E_API_URL ?? "http://localhost:8080";
 
@@ -6,7 +7,7 @@ type ApiVehicle = { key: string; recordedAt: string };
 
 /** A vehicle that reported in the last minute, so it has recent history and is still tracked. */
 async function pickActiveVehicle(page: Page): Promise<ApiVehicle> {
-  const response = await page.request.get(`${API_URL}/api/vehicles`);
+  const response = await page.request.get(`${API_URL}/api/vehicles`, { headers: await adminHeaders(page) });
   const { vehicles } = (await response.json()) as { vehicles: ApiVehicle[] };
   const active = vehicles.find((v) => Date.now() - Date.parse(v.recordedAt) < 60_000);
   expect(active, "the backend should be tracking at least one active vehicle").toBeTruthy();

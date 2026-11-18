@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { adminHeaders, expect, test } from "./fixtures";
 
 const API_URL = process.env.E2E_API_URL ?? "http://localhost:8080";
 
@@ -9,10 +10,10 @@ const areaCount = (page: Page) => page.getByText(/^[1-9][\d,.]* vehicles? in thi
 
 /** A public code of a line that has a vehicle on the road right now. */
 async function pickLineCode(page: Page): Promise<string> {
-  const vehicles = (await (await page.request.get(`${API_URL}/api/vehicles`)).json()) as {
+  const vehicles = (await (await page.request.get(`${API_URL}/api/vehicles`, { headers: await adminHeaders(page) })).json()) as {
     vehicles: { routeId: string | null }[];
   };
-  const lines = (await (await page.request.get(`${API_URL}/api/lines`)).json()) as {
+  const lines = (await (await page.request.get(`${API_URL}/api/lines`, { headers: await adminHeaders(page) })).json()) as {
     lines: { id: string; publicCode: string | null }[];
   };
   const active = new Set(vehicles.vehicles.map((v) => v.routeId));
