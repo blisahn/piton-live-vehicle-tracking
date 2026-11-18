@@ -5,6 +5,7 @@ import {
   LngLatBounds,
   Map as MaplibreMap,
   NavigationControl,
+  Popup,
   setWorkerUrl,
   type ExpressionSpecification,
   type GeoJSONSource,
@@ -31,7 +32,11 @@ export type RouteOverlay = {
 };
 
 /** A past track: the line to draw, and the real GPS fixes shown as dots on top of it. */
-export type TrackOverlay = { path: GeoPoint[]; measurements: GeoPoint[] };
+/** A past track: measured pieces, and guessed lines across silences of `gapSeconds` (drawn dotted). */
+export type TrackOverlay = {
+  segments: ({ kind: "measured"; path: GeoPoint[] } | { kind: "gap"; path: GeoPoint[]; gapSeconds: number })[];
+  measurements: GeoPoint[];
+};
 
 type LiveMapProps = {
   selectedKey: string | null;
@@ -51,6 +56,7 @@ const MODE_ICONS_LAYER = "vehicle-mode-icons";
 const TRACK_SOURCE = "track";
 const TRACK_LAYER = "track";
 const TRACK_ARROWS_LAYER = "track-arrows";
+const TRACK_GAP_LAYER = "track-gaps";
 const MEASUREMENTS_SOURCE = "track-measurements";
 const MEASUREMENTS_LAYER = "track-measurements";
 const ROUTE_PASSED_SOURCE = "route-passed";
@@ -162,6 +168,8 @@ function lineFeature(points: GeoPoint[]): GeoJSON.GeoJSON {
 
 export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMapProps) {
   const t = useTranslations("liveMap");
+  // The map's event handlers are set up once; they read the current translations through this ref.
+  const tRef = useRef(t);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MaplibreMap | null>(null);
   const scheduleUpdateRef = useRef<() => void>(() => {});
@@ -181,6 +189,7 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
   const lines = useLines();
   const linesRef = useRef(lines);
   useEffect(() => {
+    tRef.current = t;
     linesRef.current = lines;
     filterRef.current = filter;
     selectedKeyRef.current = selectedKey;
@@ -321,13 +330,24 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
         type: "line",
         source: TRACK_SOURCE,
         layout: { "line-cap": "round", "line-join": "round" },
+        filter: ["==", ["get", "kind"], "measured"],
         paint: { "line-color": TRACK_COLOR, "line-width": 4, "line-opacity": 0.8 },
       });
-      // Arrowheads along the line show which way the vehicle travelled.
+      // Across a long silence the line is a guess between two reports, so it must not look measured.
+      map.addLayer({
+        id: TRACK_GAP_LAYER,
+        type: "line",
+        source: TRACK_SOURCE,
+        filter: ["==", ["get", "kind"], "gap"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": TRACK_COLOR, "line-width": 3, "line-opacity": 0.45, "line-dasharray": [0.6, 1.8] },
+      });
+      // Arrowheads along the measured line show which way the vehicle travelled.
       map.addLayer({
         id: TRACK_ARROWS_LAYER,
         type: "symbol",
         source: TRACK_SOURCE,
+        filter: ["==", ["get", "kind"], "measured"],
         layout: {
           "symbol-placement": "line",
           "symbol-spacing": 70,
@@ -404,6 +424,25 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
         },
       });
 
+      // Hovering (or tapping, on touch screens) a gap says how long the vehicle was silent there.
+      const gapPopup = new Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+      const showGap = (event: { lngLat: { lng: number; lat: number }; features?: { properties: Record<string, unknown> }[] }) => {
+        const seconds = Number(event.features?.[0]?.properties.gapSeconds ?? 0);
+        gapPopup
+          .setLngLat(event.lngLat)
+          .setText(tRef.current("track.gap", { minutes: Math.floor(seconds / 60), seconds: seconds % 60 }))
+          .addTo(map);
+      };
+      map.on("mousemove", TRACK_GAP_LAYER, (event) => {
+        map.getCanvas().style.cursor = "help";
+        showGap(event);
+      });
+      map.on("mouseleave", TRACK_GAP_LAYER, () => {
+        map.getCanvas().style.cursor = "";
+        gapPopup.remove();
+      });
+      map.on("click", TRACK_GAP_LAYER, showGap);
+
       map.on("mouseenter", VEHICLES_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", VEHICLES_LAYER, () => (map.getCanvas().style.cursor = ""));
       map.on("click", (event) => {
@@ -477,13 +516,21 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
     const source = map.getSource<GeoJSONSource>(TRACK_SOURCE);
     const measurements = map.getSource<GeoJSONSource>(MEASUREMENTS_SOURCE);
     if (!source || !measurements) return;
-    if (!track || track.path.length < 2) {
+    const drawn = track?.segments.filter((segment) => segment.path.length >= 2) ?? [];
+    if (!track || drawn.length === 0) {
       source.setData(EMPTY_COLLECTION);
       measurements.setData(EMPTY_COLLECTION);
       trackFittedRef.current = false;
       return;
     }
-    source.setData(lineFeature(track.path));
+    source.setData({
+      type: "FeatureCollection",
+      features: drawn.map((segment) => ({
+        type: "Feature",
+        properties: { kind: segment.kind, gapSeconds: segment.kind === "gap" ? segment.gapSeconds : null },
+        geometry: { type: "LineString", coordinates: lineCoordinates(segment.path) },
+      })),
+    });
     measurements.setData({
       type: "FeatureCollection",
       features: track.measurements.map((point) => ({
@@ -496,7 +543,7 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
     // after that the user's own panning and zooming is left alone.
     if (trackFittedRef.current) return;
     trackFittedRef.current = true;
-    const coordinates = lineCoordinates(track.path);
+    const coordinates = drawn.flatMap((segment) => lineCoordinates(segment.path));
     const bounds = new LngLatBounds(coordinates[0], coordinates[0]);
     for (const coordinate of coordinates) bounds.extend(coordinate);
     map.fitBounds(bounds, { padding: 48, maxZoom: 15 });

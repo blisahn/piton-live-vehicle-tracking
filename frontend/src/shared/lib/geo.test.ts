@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distanceMeters, locateStopsAlongPath, projectOntoPath, snapTrackToPath, splitPathAt, type GeoPoint } from "./geo";
+import { distanceMeters, locateStopsAlongPath, projectOntoPath, snapTrackToPath, splitAtGaps, splitPathAt, type GeoPoint } from "./geo";
 
 // 0.009 degrees of latitude is about 1 km.
 const origin: GeoPoint = { lat: 59, lon: 10 };
@@ -88,5 +88,40 @@ describe("snapTrackToPath", () => {
     const onTheWayBack = projectOntoPath({ lat: 60, lon: 10.01 }, [a, b, a], { from: 1, to: 1 });
 
     expect(onTheWayBack.segmentIndex).toBe(1);
+  });
+});
+
+describe("splitAtGaps", () => {
+  const at = (seconds: number, lat = 60, lon = 5) => ({ lat, lon: lon + seconds / 1000, at: seconds * 1000 });
+  const MAX = 120_000;
+
+  it("keeps a track without gaps as one measured piece", () => {
+    const pieces = splitAtGaps([at(0), at(10), at(20)], MAX);
+    expect(pieces).toHaveLength(1);
+    expect(pieces[0].kind).toBe("measured");
+    expect(pieces[0].points).toHaveLength(3);
+  });
+
+  it("puts a gap piece between the reports around a long silence", () => {
+    const pieces = splitAtGaps([at(0), at(10), at(280), at(290)], MAX);
+    expect(pieces.map((p) => p.kind)).toEqual(["measured", "gap", "measured"]);
+    const gap = pieces[1];
+    expect(gap.kind === "gap" && gap.gapSeconds).toBe(270);
+    expect(gap.points[0]).toEqual({ lat: 60, lon: 5.01 });
+    expect(gap.points[1]).toEqual({ lat: 60, lon: 5.28 });
+  });
+
+  it("treats exactly the threshold as no gap and anything above it as a gap", () => {
+    expect(splitAtGaps([at(0), at(120)], MAX).map((p) => p.kind)).toEqual(["measured"]);
+    expect(splitAtGaps([at(0), at(121)], MAX).map((p) => p.kind)).toEqual(["gap"]);
+  });
+
+  it("handles a track that starts and ends with a gap", () => {
+    const pieces = splitAtGaps([at(0), at(200), at(210), at(400)], MAX);
+    expect(pieces.map((p) => p.kind)).toEqual(["gap", "measured", "gap"]);
+  });
+
+  it("draws nothing for a single report", () => {
+    expect(splitAtGaps([at(0)], MAX)).toEqual([]);
   });
 });

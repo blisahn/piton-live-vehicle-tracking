@@ -27,5 +27,5 @@
     "1": "At stop",
     "2": "On the way"
   },
-  "pathHint": "The dots are the positions the vehicle reported. Between them the line follows the planned route where the vehicle was on it, otherwise it is a straight line. Arrows show the direction of travel; the line grows as the vehicle moves."
+  "pathHint": "The dots are the positions the vehicle reported. Between them the line follows the planned route where the vehicle was on it, otherwise it is a straight line. Arrows show the direction of travel; the line grows as the vehicle moves. Dotted parts are stretches of more than 2 minutes without a position; the line there was not measured, it only joins two reports."
 }

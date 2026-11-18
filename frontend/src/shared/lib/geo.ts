@@ -145,3 +145,36 @@ export function snapTrackToPath(track: GeoPoint[], path: GeoPoint[], maxOffsetMe
   }
   return drawn;
 }
+
+/** A reported position with its time in epoch milliseconds. */
+export type TimedPoint = GeoPoint & { at: number };
+
+export type TrackPiece = { kind: "measured"; points: GeoPoint[] } | { kind: "gap"; points: [GeoPoint, GeoPoint]; gapSeconds: number };
+
+/**
+ * Splits a track (oldest first) where two consecutive reports are more than `maxGapMs` apart.
+ * The line across such a gap was never measured, only guessed, so it is drawn differently.
+ * Runs of reports become "measured" pieces; each gap becomes a two-point "gap" piece joining
+ * the last report before it to the first one after it.
+ */
+export function splitAtGaps(points: TimedPoint[], maxGapMs: number): TrackPiece[] {
+  const pieces: TrackPiece[] = [];
+  let run: GeoPoint[] = [];
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
+    const position = { lat: point.lat, lon: point.lon };
+    if (i > 0 && point.at - points[i - 1].at > maxGapMs) {
+      const previous = points[i - 1];
+      if (run.length > 1) pieces.push({ kind: "measured", points: run });
+      pieces.push({
+        kind: "gap",
+        points: [{ lat: previous.lat, lon: previous.lon }, position],
+        gapSeconds: Math.round((point.at - previous.at) / 1000),
+      });
+      run = [];
+    }
+    run.push(position);
+  }
+  if (run.length > 1) pieces.push({ kind: "measured", points: run });
+  return pieces;
+}

@@ -23,5 +23,8 @@
     "metro": "Metro",
     "water": "Ferry / boat",
     "unknown": "Type unknown"
+  },
+  "track": {
+    "gap": "No position for {minutes, plural, =0 {} other {# min }}{seconds} s"
   }
 }

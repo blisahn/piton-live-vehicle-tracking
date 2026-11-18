@@ -27,5 +27,5 @@
     "1": "Durakta",
     "2": "Yolda"
   },
-  "pathHint": "Noktalar aracın bildirdiği konumlardır. Noktalar arasında çizgi, araç planlanan güzergah üzerindeyken güzergahı izler; aksi halde düz bir çizgidir. Oklar gidiş yönünü gösterir; araç ilerledikçe çizgi uzar."
+  "pathHint": "Noktalar aracın bildirdiği konumlardır. Noktalar arasında çizgi, araç planlanan güzergah üzerindeyken güzergahı izler; aksi halde düz bir çizgidir. Oklar gidiş yönünü gösterir; araç ilerledikçe çizgi uzar. Noktalı kısımlar 2 dakikadan uzun süre konum alınamayan aralıklardır; oradaki çizgi ölçülmemiş, iki konumu birleştiren bir tahmindir."
 }
