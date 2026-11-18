@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="VehicleTracking.UnitTests" />
+    <InternalsVisibleTo Include="VehicleTracking.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>
