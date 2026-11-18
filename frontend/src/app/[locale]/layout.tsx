@@ -3,11 +3,11 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Geist } from "next/font/google";
 import { notFound } from "next/navigation";
-import { ConnectionBadge, LiveVehiclesProvider } from "@/entities/vehicle";
+import { SessionProvider } from "@/entities/session";
 import { routing } from "@/i18n/routing";
-import { AppHeader } from "@/shared/ui/app-header";
 import { QueryProvider } from "@/shared/ui/query-provider";
 import "../globals.css";
+import { AuthGate } from "./auth-gate";
 
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin", "latin-ext"] });
 
@@ -33,11 +33,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       <body className="flex h-full flex-col">
         <NextIntlClientProvider>
           <QueryProvider>
-            {/* The live connection belongs to the layout, so moving between screens does not drop it. */}
-            <LiveVehiclesProvider>
-              <AppHeader status={<ConnectionBadge />} />
-              <main className="flex min-h-0 flex-1 flex-col">{children}</main>
-            </LiveVehiclesProvider>
+            <SessionProvider>
+              <AuthGate>{children}</AuthGate>
+            </SessionProvider>
           </QueryProvider>
         </NextIntlClientProvider>
       </body>

@@ -43,3 +43,14 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
     </div>
   );
 }
+
+/** The signed-in user is not allowed to see this screen (403). */
+export function ForbiddenState() {
+  const t = useTranslations("common.state");
+  return (
+    <div role="alert" className="p-4 text-sm">
+      <p className="font-medium">{t("forbiddenTitle")}</p>
+      <p className="mt-1 text-muted-foreground">{t("forbiddenHint")}</p>
+    </div>
+  );
+}
