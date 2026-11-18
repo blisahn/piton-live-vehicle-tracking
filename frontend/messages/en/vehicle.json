@@ -3,7 +3,7 @@
   "close": "Close vehicle details",
   "drawerLabel": "Vehicle details",
   "empty": "Vehicle not found",
-  "emptyHint": "This vehicle has stopped reporting or the link is outdated.",
+  "emptyHint": "This vehicle has not reported for more than 10 minutes, so it was taken off the live map; usually its trip has ended. The recent positions below cover the last 3 hours.",
   "stale": "The connection is unstable, so these values may be out of date.",
   "none": "–",
   "fields": {

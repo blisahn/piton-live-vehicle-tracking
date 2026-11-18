@@ -27,6 +27,10 @@ builder.Services.AddOptions<RetentionOptions>()
     .BindConfiguration(RetentionOptions.SectionName)
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<LiveOptions>()
+    .BindConfiguration(LiveOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddOptions<AuthOptions>()
     .BindConfiguration(AuthOptions.SectionName)

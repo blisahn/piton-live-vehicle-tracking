@@ -3,7 +3,7 @@
   "close": "Araç ayrıntılarını kapat",
   "drawerLabel": "Araç ayrıntıları",
   "empty": "Araç bulunamadı",
-  "emptyHint": "Bu araç konum göndermeyi bıraktı veya bağlantı eski.",
+  "emptyHint": "Bu araç 10 dakikadan uzun süredir konum göndermediği için canlı haritadan kaldırıldı; genellikle seferi bitmiştir. Aşağıdaki son konumlar son 3 saati gösterir.",
   "stale": "Bağlantı kararsız olduğundan bu değerler güncel olmayabilir.",
   "none": "–",
   "fields": {
