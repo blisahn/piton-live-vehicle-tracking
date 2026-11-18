@@ -9,7 +9,6 @@ export { ConnectionBadge } from "./ui/connection-badge";
 export { useAlertsVersion } from "./model/alerts-version-store";
 export {
   useSubscriptionStore,
-  useIsAreaSubscription,
   type Bbox,
   type Subscription,
 } from "./model/subscription-store";

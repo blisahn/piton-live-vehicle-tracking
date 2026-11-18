@@ -15,14 +15,14 @@ async function pickActiveVehicle(page: Page): Promise<ApiVehicle> {
 }
 
 const connectionBadge = (page: Page) => page.getByRole("status", { name: /^Connection:/ });
-// "N of M vehicles" for the whole country, "N vehicles in this area" while the view is zoomed in.
-const vehicleCount = (page: Page) => page.getByText(/of [\d,.]+ vehicles?|[\d,.]+ vehicles? in this area/);
+// "N vehicles on screen", or "N matching vehicles, M on screen" while a filter is set.
+const vehicleCount = (page: Page) => page.getByText(/[\d,.]+ (matching )?vehicles?(, [\d,.]+)? on screen/);
 
 test("the map goes live and counts the vehicles it shows", async ({ page }) => {
   await page.goto("/en");
 
   await expect(connectionBadge(page)).toHaveText("Live");
-  await expect(vehicleCount(page)).toHaveText(/^[1-9][\d,.]*( of [1-9]| vehicles? in this area)/);
+  await expect(vehicleCount(page)).toHaveText(/^[1-9][\d,.]* (matching )?vehicles?/);
   await expect(page.getByRole("application")).toBeVisible();
 });
 
@@ -93,7 +93,7 @@ test("when the connection drops the app says so and recovers by itself", async (
   allowConnections = true;
   await expect(connectionBadge(page)).toHaveText("Live", { timeout: 30_000 });
   // Back in sync: a fresh snapshot repopulated the store.
-  await expect(vehicleCount(page)).toHaveText(/^[1-9][\d,.]*( of [1-9]| vehicles? in this area)/);
+  await expect(vehicleCount(page)).toHaveText(/^[1-9][\d,.]* (matching )?vehicles?/);
 });
 
 test("the status screen shows the four required numbers", async ({ page }) => {

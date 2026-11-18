@@ -34,11 +34,6 @@ export function effectiveSubscription(state: SubscriptionState): Subscription {
   return { bbox: state.viewportSuspended ? null : state.bbox, lines: state.lines, keys: state.keys };
 }
 
-/** True when the vehicles on screen are only those of the visible area (so counts mean "in this area"). */
-export function useIsAreaSubscription(): boolean {
-  return useSubscriptionStore((s) => s.bbox !== null && !s.viewportSuspended && s.lines.length === 0);
-}
-
 /** Order-insensitive identity, to skip sending a subscription the server already has. */
 export function subscriptionKey(subscription: Subscription): string {
   return JSON.stringify([subscription.bbox, [...subscription.lines].sort(), [...subscription.keys].sort()]);

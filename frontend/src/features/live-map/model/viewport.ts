@@ -28,3 +28,8 @@ export function paddedBounds([west, south, east, north]: Bounds, factor: number)
 export function contains(outer: Bounds, inner: Bounds): boolean {
   return outer[0] <= inner[0] && outer[1] <= inner[1] && outer[2] >= inner[2] && outer[3] >= inner[3];
 }
+
+/** Whether a position lies inside west/south/east/north bounds (edges included). */
+export function isInside([west, south, east, north]: Bounds, lon: number, lat: number): boolean {
+  return lon >= west && lon <= east && lat >= south && lat <= north;
+}

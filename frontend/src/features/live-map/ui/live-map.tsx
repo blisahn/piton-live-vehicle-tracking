@@ -20,6 +20,7 @@ import { useIsDesktop } from "@/shared/lib/use-media-query";
 import { EmptyState, ErrorState, LoadingState } from "@/shared/ui/state-views";
 import { headingArrow, ICON_PIXEL_RATIO, modePictogram, travelArrow } from "../model/map-icons";
 import { contains, paddedBounds, shouldSubscribe, VIEWPORT_PADDING, type Bounds } from "../model/viewport";
+import { useScreenBoundsStore } from "../model/screen-bounds-store";
 import { buildVehicleCollection, countMatches, type VehicleMode } from "../model/vehicle-geojson";
 
 /** A planned route, already split at the vehicle: the page hands it to the map, which only draws it. */
@@ -463,6 +464,8 @@ export function LiveMap({ selectedKey, onSelect, filter, track, route }: LiveMap
 
     // Subscribe to what the map shows (plus padding). Small pans stay inside the padded area and send nothing.
     function syncViewport() {
+      const screen = map.getBounds();
+      useScreenBoundsStore.getState().setBounds([screen.getWest(), screen.getSouth(), screen.getEast(), screen.getNorth()]);
       const { bbox, setViewport } = useSubscriptionStore.getState();
       if (!shouldSubscribe(map.getZoom())) {
         if (bbox !== null) setViewport(null);
