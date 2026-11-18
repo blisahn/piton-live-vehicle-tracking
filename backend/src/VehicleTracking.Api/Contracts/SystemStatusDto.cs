@@ -20,7 +20,8 @@ public sealed record SystemStatusDto(
     int ActiveAlerts,
     DateTimeOffset? AlertsLastSuccessfulReadAt,
     DateTimeOffset? TripUpdatesLastSuccessfulReadAt,
-    int TrackedTrips)
+    int TrackedTrips,
+    long WebSocketBytesLastMinute)
 {
     public static SystemStatusDto From(SystemStatus s) => new(
         s.ServerTime,
@@ -39,5 +40,6 @@ public sealed record SystemStatusDto(
         s.ActiveAlerts,
         s.AlertsLastSuccessfulReadAt,
         s.TripUpdatesLastSuccessfulReadAt,
-        s.TrackedTrips);
+        s.TrackedTrips,
+        s.WebSocketBytesLastMinute);
 }

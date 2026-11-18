@@ -97,4 +97,35 @@ public class VehicleSocketHubTests
         Assert.Equal(8, version);
         Assert.Equal(8, second.Take().AlertsVersion);
     }
+
+    [Fact]
+    public void Resnapshot_replaces_pending_changes_with_the_current_snapshot_and_keeps_later_changes()
+    {
+        var outbox = _hub.Register();
+        outbox.Take();
+        _hub.Publish(ChangeWith(4, "A:2"));
+
+        // The live state has meanwhile moved on to sequence 5.
+        _liveState.GetSnapshot().Returns(new LiveSnapshot(5, new[] { Position("A:1"), Position("A:2") }));
+        _hub.Resnapshot(outbox);
+        _hub.Publish(ChangeWith(5, "A:2"));   // already inside the snapshot
+        _hub.Publish(ChangeWith(6, "A:3"));
+
+        var (snapshot, delta, _) = outbox.Take();
+        Assert.Equal(5, snapshot!.Sequence);
+        Assert.Equal(2, snapshot.Vehicles.Count);
+        Assert.Equal(6, delta!.FromSequence);
+        Assert.Equal("A:3", Assert.Single(delta.Upserted).VehicleKey);
+    }
+
+    [Fact]
+    public void Resnapshot_does_not_resend_the_alerts_version()
+    {
+        var outbox = _hub.Register();
+        outbox.Take();
+
+        _hub.Resnapshot(outbox);
+
+        Assert.Null(outbox.Take().AlertsVersion);
+    }
 }

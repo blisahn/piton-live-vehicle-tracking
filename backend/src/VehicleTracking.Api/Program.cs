@@ -35,6 +35,8 @@ builder.Services.AddSingleton<ILivePublisher>(provider => provider.GetRequiredSe
 builder.Services.AddSingleton<IAlertPublisher>(provider => provider.GetRequiredService<VehicleSocketHub>());
 builder.Services.AddSingleton(provider => new Lazy<IAlertVersionReader>(() => provider.GetRequiredService<IAlertVersionReader>()));
 builder.Services.AddSingleton<IConnectionCounter>(provider => provider.GetRequiredService<VehicleSocketHub>());
+builder.Services.AddSingleton<WebSocketTraffic>();
+builder.Services.AddSingleton<IWebSocketTraffic>(provider => provider.GetRequiredService<WebSocketTraffic>());
 
 // The browser app is served from another origin; only the configured origins may call the API or open a socket.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
