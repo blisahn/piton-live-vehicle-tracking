@@ -94,34 +94,38 @@ Katman bağımlılığı tek yönlüdür: `Api → Infrastructure → Applicatio
 
 ## 4. Akış 1: Bir okuma döngüsü
 
+**a) Her 3 saniyede: oku, ayıkla, uygula, diske yaz, yayınla**
+
 ```mermaid
 sequenceDiagram
     autonumber
-    participant P as FeedPollingWorker
+    participant I as IngestionService<br/>(FeedPollingWorker çağırır)
     participant E as Entur
-    participant I as IngestionService
-    participant N as SnapshotNormalizer
     participant L as InMemoryLiveState
     participant S as FilePositionSpool
     participant H as VehicleSocketHub
+
+    I->>E: GET vehicle-positions
+    E-->>I: FeedMessage (~1,7 MB, ~8.400 entity)
+    Note over I: SnapshotNormalizer: araç başına en yeni entity,<br/>geçersiz, zamansız ve gelecekten gelenler elenir
+    I->>L: Apply (3 sa hafıza, 10 dk canlı)
+    L-->>I: kaydedilecek konumlar + istemcilerin göreceği değişiklik
+    I->>S: yeni konumları dosyaya yaz
+    Note over I,S: Diske yazma yayından önce
+    I->>H: değişikliği yayınla (upsert, removed, seq)
+```
+
+**b) Ayrı bir döngüde: diskten veritabanına**
+
+```mermaid
+sequenceDiagram
+    autonumber
     participant W as PositionWriterWorker
+    participant S as FilePositionSpool
     participant DB as Veritabanı
 
-    loop her 3 saniyede
-        P->>I: RunOnceAsync
-        I->>E: GET vehicle-positions (süre sınırı gövde dahil 10 sn)
-        E-->>I: FeedMessage (~1,7 MB, ~8.400 entity)
-        I->>N: ham snapshot
-        Note over N: Araç başına en yeni entity.<br/>Geçersiz konum, zamansız ve gelecekten<br/>gelen kayıtlar elenir.
-        N-->>I: konumlar
-        I->>L: Apply(retainAfter = şimdi−3 sa, liveAfter = şimdi−10 dk)
-        L-->>I: kaydedilecekler + istemcilerin göreceği değişiklik
-        I->>S: yeni konumlar dosyaya (yayından önce)
-        I->>H: değişiklik (upsert / removed, seq)
-    end
-
     loop spool'da parti oldukça
-        W->>S: sıradaki partiyi oku
+        W->>S: en eski partiyi oku
         W->>DB: INSERT … SELECT unnest(…) ON CONFLICT DO NOTHING
         DB-->>W: commit
         W->>S: partiyi sil
@@ -314,33 +318,39 @@ sequenceDiagram
 
 ## 11. Akış 8: Uyarılar ve sefer takibi
 
+**a) Uyarılar**
+
 ```mermaid
 sequenceDiagram
     autonumber
-    participant AW as AlertPollingWorker
-    participant AS as AlertService
-    participant TR as TripRouteService (Journey Planner)
+    participant A as AlertService<br/>(AlertPollingWorker, 30 sn)
     participant H as VehicleSocketHub
-    participant TW as TripUpdatePollingWorker
-    participant TU as TripUpdateService
     participant B as Tarayıcı
 
-    loop 30 sn
-        AW->>AS: uyarılar (dil normalleştirilir ya da tahmin edilir)
-        Note over AS: İçerik değiştiyse version++
-        AS->>H: version
-        H-->>B: alerts {version}
-        AS->>TR: yalnızca sefere bağlı uyarılar için sefer → hat (önbellekli, en fazla 4 paralel)
-    end
-    B->>AS: GET /api/alerts?lineId=&stopId= (version değişince)
+    A->>A: uyarıları oku, dili normalleştir ya da tahmin et
+    Note over A: İçerik değiştiyse version artar
+    A->>H: yeni version
+    H-->>B: alerts {version}
+    B->>A: GET /api/alerts?lineId=&stopId=
+    A-->>B: güncel liste
+```
 
-    loop 30 sn
-        TW->>TU: trip updates (~12 MB): sefer başına durak gecikmeleri
-        Note over TU: ±6 saat dışındaki gecikmeler atılır,<br/>durak kimlikleri tekilleştirilir
-    end
-    B->>TU: GET /api/trips/{tripId}/progress
-    TU->>TR: planlanan durak saatleri
-    TU-->>B: tahmini saat = planlanan + gecikme (Norveç saati)
+Uyarıların %60'ı yalnızca sefer adı verdiği için, hat filtresinin çalışması amacıyla her seferin hattı Journey Planner'dan bir kez sorulur (önbellekli, en fazla 4 paralel istek).
+
+**b) Sefer takibi**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Tarayıcı
+    participant T as TripUpdateService<br/>(TripUpdatePollingWorker, 30 sn)
+    participant J as TripRouteService<br/>(Journey Planner)
+
+    Note over T: Akış (~12 MB) sefer başına durak gecikmelerini verir,<br/>mutlak saat vermez. ±6 saat dışındakiler atılır
+    B->>T: GET /api/trips/{tripId}/progress
+    T->>J: planlanan durak saatleri (6 sa önbellek)
+    J-->>T: durak listesi + saatler
+    T-->>B: tahmini saat = planlanan + gecikme (Norveç saati)
 ```
 
 ## 12. Veri kaybı senaryoları
@@ -357,30 +367,28 @@ sequenceDiagram
 ## 13. Frontend'de veri nerede durur
 
 ```mermaid
-flowchart TB
-    WS["WebSocket mesajları"] --> LiveStore["LiveVehicleStore<br/>Map(araç anahtarı → araç)<br/>React dışında"]
-    WS -->|"alerts {version}"| AlertsVersion["alerts-version-store"]
-    LiveStore -->|"rAF ile kare başına bir kez"| MapLayer["MapLibre GeoJSON kaynağı<br/>(WebGL katmanı)"]
-    LiveStore -->|"yalnızca seçili araç"| Panel["Araç detay paneli"]
+flowchart LR
+    subgraph Canli["Canlı veri"]
+        direction TB
+        WS["WebSocket mesajları"] --> LS["LiveVehicleStore<br/>React dışında"]
+        LS --> MapL["Harita<br/>kare başına bir kez çizilir"]
+        LS --> Panel["Seçili aracın paneli"]
+    end
 
-    REST["REST yanıtları"] --> TQ["TanStack Query önbelleği"]
-    TQ --> History["Geçmiş listesi ve iz"]
-    TQ --> Alerts["Uyarılar, gecikme, güzergah"]
-    TQ --> Status["Sistem durumu"]
-    AlertsVersion -->|"version değişince yeniden çek"| Alerts
+    subgraph Sunucu["Sunucu verisi"]
+        direction TB
+        REST["REST yanıtları"] --> TQ["TanStack Query<br/>önbellek, yenileme"]
+        TQ --> Ekranlar["Geçmiş · uyarılar · gecikme<br/>güzergah · sistem durumu"]
+    end
 
-    MapMove["Harita hareketi"] --> Sub["subscription-store<br/>bbox · lines · keys"]
-    MapMove --> Screen["screen-bounds-store<br/>sayaç için"]
-    Sub --> WS
-
-    Login["Giriş / sessiz refresh"] --> Sess["session-store<br/>access token yalnızca bellekte"]
-    Sess --> REST
-    Sess --> WS
-
-    URL["URL arama parametreleri"] --> Filter["Filtre, seçili araç"]
-    Filter --> Sub
-    Filter --> MapLayer
+    subgraph Arayuz["Arayüz durumu"]
+        direction TB
+        URL["URL<br/>filtre, seçili araç"]
+        Zs["Zustand<br/>oturum (access token), bağlantı,<br/>abonelik, ekran sınırları"]
+    end
 ```
+
+Üç alan birbirinden bağımsızdır ve aralarındaki bağlantılar küçüktür: WebSocket'ten gelen `alerts {version}` uyarı sorgusunu yeniden çektirir; harita hareketi ve filtre, Zustand'daki aboneliği değiştirir, abonelik de WebSocket'e `subscribe` olarak gider; access token hem REST isteklerine hem WebSocket bağlantısına eklenir.
 
 | Veri türü | Nerede | Neden |
 |---|---|---|
@@ -389,23 +397,3 @@ flowchart TB
 | Bağlantı durumu, abonelik, ekran sınırları | Zustand | Küçük, arayüze ait durum |
 | Access token | Zustand, yalnızca bellekte | Kalıcı bir yerde durmaz; yenilemede HttpOnly cookie'den geri gelir |
 | Filtre, seçili araç | URL | Sayfa yenilenince ve link paylaşılınca korunmalı |
-
-## 14. Sunumda sorulabilecek sorular
-
-- Neden TimescaleDB, neden Redis değil?
-- Chunk boyu neden saklama süresinin on ikide biri? Bir kayıt en az ve en fazla ne kadar saklanır?
-- Saklama süresi 10 güne çıksa ne değişir?
-- Spool dosyası dolarsa ya da disk biterse ne olur?
-- Neden SignalR yerine düz WebSocket?
-- İstemci neden kaçırdığı delta'ları istemiyor da baştan snapshot alıyor?
-- Aynı araç neden akışta birden çok kez geçiyor, hangisini seçiyorsun?
-- Toplu yazmada neden EF Core ya da `COPY` değil de `unnest`?
-- Geçmiş sayfalamasında neden `OFFSET` kullanmıyorsun?
-- Canlı veriyi neden Zustand'da ya da TanStack Query'de tutmuyorsun?
-- Neden iki pencere (3 saat hafıza, 10 dakika canlı)? Kaynak kapalıyken harita neden boşalmıyor?
-- Abonelikte süzme neden istemcinin gönderim döngüsünde? Boş delta neden yine gönderiliyor?
-- Access token neden bellekte, refresh token neden HttpOnly cookie'de? Refresh token çalınırsa ne olur?
-- Backend yeniden başlayınca tarayıcının oturumu ve canlı bağlantısı nasıl toparlanıyor?
-- Trip Updates'te mutlak saat yokken tahmini varışı nasıl hesaplıyorsun?
-
-Bunların kısa cevapları yukarıdaki bölümlerde ve README'de var.
