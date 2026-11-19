@@ -11,45 +11,57 @@ Backend, Entur'un araç konum akışını 3 saniyede bir okur. Yeni konumları �
 ## 2. Büyük resim
 
 ```mermaid
-flowchart LR
-    EnturVP["Entur GTFS-RT<br/>vehicle-positions<br/>(3 sn)"]
-    EnturX["Entur GTFS-RT<br/>alerts · trip-updates<br/>(30 sn)"]
-    JP["Entur Journey Planner<br/>adlar · güzergahlar · planlanan saatler"]
+flowchart TB
+    subgraph Entur["Entur (dış kaynaklar)"]
+        direction LR
+        EnturVP["GTFS-RT vehicle-positions<br/>3 sn"]
+        EnturX["GTFS-RT alerts · trip-updates<br/>30 sn"]
+        JP["Journey Planner<br/>adlar · güzergahlar · planlanan saatler"]
+    end
 
     subgraph Backend["Backend (ASP.NET Core 8)"]
-        Poll["FeedPollingWorker<br/>→ IngestionService"]
-        Norm["SnapshotNormalizer"]
-        Live["InMemoryLiveState<br/>3 sa hafıza · 10 dk canlı"]
-        Spool["FilePositionSpool<br/>diskte bekleyen partiler"]
-        Writer["PositionWriterWorker"]
-        Ret["RetentionWorker"]
-        Hub["VehicleSocketHub<br/>istemci başına ClientOutbox<br/>+ abonelik süzmesi"]
-        Side["AlertService<br/>TripUpdateService"]
-        Ref["ReferenceDataService<br/>TripRouteService"]
-        Rest["REST API<br/>(JWT, admin rolü)"]
+        direction TB
+        subgraph CanliYol["Canlı yol (bellekte)"]
+            direction LR
+            Poll["FeedPollingWorker<br/>→ IngestionService"] --> Norm["SnapshotNormalizer"] --> Live["InMemoryLiveState<br/>3 sa hafıza · 10 dk canlı"] --> Hub["VehicleSocketHub<br/>ClientOutbox + abonelik"]
+        end
+        subgraph KaliciYol["Kalıcı yol (disk → veritabanı)"]
+            direction LR
+            Spool["FilePositionSpool"] --> Writer["PositionWriterWorker"]
+            Ret["RetentionWorker"]
+        end
+        subgraph Yan["Yan akışlar ve REST"]
+            direction LR
+            Side["AlertService<br/>TripUpdateService"]
+            Ref["ReferenceDataService<br/>TripRouteService"]
+            Rest["REST API<br/>JWT, admin rolü"]
+        end
     end
 
-    DB[("PostgreSQL + TimescaleDB<br/>vehicle_positions · users<br/>refresh_tokens · transit_*")]
+    DB[("PostgreSQL + TimescaleDB<br/>vehicle_positions · users · refresh_tokens · transit_*")]
 
     subgraph Frontend["Frontend (Next.js 16)"]
-        Sock["VehicleSocket"]
-        Store["LiveVehicleStore<br/>(React dışında)"]
-        Map["MapLibre harita"]
-        Query["TanStack Query"]
+        direction LR
         Session["session-store<br/>access token bellekte"]
+        Sock["VehicleSocket"] --> Store["LiveVehicleStore<br/>React dışında"] --> Map["MapLibre"]
+        Query["TanStack Query"]
     end
 
-    EnturVP -->|protobuf| Poll --> Norm --> Live
-    Live -->|yeni konumlar| Spool --> Writer --> DB
-    Live -->|"canlı değişiklikler"| Hub
-    Ret -->|eski chunk'ları düşürür| DB
+    EnturVP -->|protobuf| Poll
+    Live -->|yeni konumlar| Spool
+    Writer --> DB
+    Ret -->|drop_chunks| DB
     EnturX --> Side
-    Side -->|"alerts version"| Hub
-    JP --> Ref --> DB
-    Rest --> Live & Side & Ref & DB
-    Hub -->|"WebSocket + access_token"| Sock --> Store --> Map
+    Side -. "alerts version" .-> Hub
+    JP --> Ref
+    Ref --> DB
+    Rest --> Side
+    Rest --> Ref
+    Rest --> DB
+    Hub -->|"WebSocket + access_token"| Sock
     Query -->|"HTTP + Bearer"| Rest
-    Session -.token.-> Sock & Query
+    Session -.-> Sock
+    Session -.-> Query
 ```
 
 Verinin iki ayrı yolu var ve birbirlerini beklemezler:
