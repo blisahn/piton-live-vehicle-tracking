@@ -244,7 +244,7 @@ sequenceDiagram
     Note over S: Spool boşalır, aradaki konumlar boşluksuz yazılır
 ```
 
-Denendi: 45 sn'lik kesintide 8 parti birikti ve ~4 sn'de boşaldı. Makine yeniden başlatıldığında backend açıldı ama veritabanı açılmadı; backend 13 partiyi tampona yazdı ve veritabanı başlatılınca kayıpsız boşalttı. Bundan sonra veritabanına da `restart: unless-stopped` eklendi.
+Denendi: 45 sn'lik kesintide 8 parti birikti ve ~4 sn'de boşaldı. Docker ana makinesi yeniden başlatıldığında backend açıldı ama veritabanı açılmadı; backend 13 partiyi tampona yazdı ve veritabanı başlatılınca kayıpsız boşalttı. Bundan sonra veritabanına da `restart: unless-stopped` eklendi.
 
 ## 9. Akış 6: Saklama ve silme
 
