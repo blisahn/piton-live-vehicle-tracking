@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -26,7 +27,9 @@ internal sealed class EfIngestStatsReader(
                 .Where(s => s.Minute >= sinceUtc)
                 .SumAsync(s => (long?)s.RowsWritten, cancellationToken) ?? 0;
         }
-        catch (Exception ex) when (ex is NpgsqlException or InvalidOperationException or TimeoutException)
+        // SocketException: when the database container is stopped, Docker also removes its host name,
+        // and Npgsql reports the failed DNS lookup as a bare SocketException instead of an NpgsqlException.
+        catch (Exception ex) when (ex is NpgsqlException or SocketException or InvalidOperationException or TimeoutException)
         {
             logger.LogDebug(ex, "Database unreachable while reading ingest stats");
             return null;
